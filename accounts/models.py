@@ -29,4 +29,4 @@ class Account(AbstractUser):
     objects = AccountManager()
 
     def __str__(self):
-        return f'{self.first_name} {self.last_name}' if not self.first_name and not self.last_name else f"{self.email}"
+        return self.email
