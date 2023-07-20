@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Own apps
     'accounts',
+    'verification',
     # Third-party apps
     'rest_framework',
     'rest_framework_simplejwt',
@@ -149,7 +150,6 @@ SIMPLE_JWT = {
     'AUTH_TOKEN_CLASSES': (
         'rest_framework_simplejwt.tokens.AccessToken',
     ),
-    'TOKEN_OBTAIN_SERIALIZER': 'accounts.serializers.CustomTokenObtainPairSerializer'
 }
 
 white_list = ['http://localhost:3000/signin']
@@ -187,3 +187,10 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv("SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET")
 SOCIAL_AUTH_GOOGLE_OAUTH2_EXTRA_DATA = ['first_name', 'last_name']
 
 SOCIAL_AUTH_IMMUTABLE_USER_FIELDS = ['first_name', 'last_name']
+
+CELERY_BROKER_URL = "redis://redis:6379"
+CELERY_RESULT_BACKEND = "redis://redis:6379"
+
+TWILIO_ACCOUNT_SID=os.getenv("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN=os.getenv("TWILIO_AUTH_TOKEN")
+TWILIO_SERVICE_SID_CHANGE_EMAIL=os.getenv("TWILIO_SERVICE_SID_CHANGE_EMAIL")

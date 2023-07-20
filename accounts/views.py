@@ -3,7 +3,8 @@ from rest_framework import permissions, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.contrib.auth import authenticate
-from .serializers import UserSerializer, PasswordSerializer
+from .serializers import UserSerializer, PasswordSerializer, ChangeEmailSerializer
+from verification.tasks import send_code_to_change_email
 
 Account = get_user_model()
 
@@ -56,7 +57,9 @@ class UserViewSet(viewsets.ViewSet):
             user.save()
             return Response({'success': 'Password changed successfully'}, status=status.HTTP_200_OK)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            error_message = serializer.errors.get(list(serializer.errors)[0])[0]
+
+            return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['patch'], url_path='update-info', url_name='update_info')
     def update_info(self, request):
@@ -64,35 +67,60 @@ class UserViewSet(viewsets.ViewSet):
         Action to update user fields
 
         Request data:
-            field: field to update
-            value: value of field
+            - field to update
         Returns:
             if:
-                - field parameter is "email"
+                - serializer data is not valid
                 returns HTTP code 400
             if:
                 - serializer data is valid
-                updates field in the user model
+                updates fields in the user model
                 returns HTTP code 200
         """
         user = self.get_object()
 
-        # get the field name from the request data
-        field = request.data.get('field')
-
-        print(request.data)
-
-        if field == 'email':
-            return Response({'error': 'Email field cannot be updated'}, status=status.HTTP_400_BAD_REQUEST)
-
         # use the serializer to validate and update the data
-        serializer = self.serializer_class(user, data={field: request.data.get('value')}, partial=True)
+        # specify the fields that you want to update
+        serializer = self.serializer_class(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-
-            # use the replace and capitalize methods to modify the field name
-            field = field.replace('_', ' ').capitalize()
-
-            return Response({'success':  f'{field} updated successfully'}, status=status.HTTP_200_OK)
+            # use the join and capitalize methods to modify the field names
+            field_names = ', '.join([field.replace('_', ' ').capitalize() for field in request.data])
+            return Response({'success': f'{field_names} updated successfully'}, status=status.HTTP_200_OK)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            error_message = serializer.errors.get(list(serializer.errors)[0])[0]
+
+            return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'], url_path='change-email', url_name='change_email')
+    def change_email(self, request):
+        """
+        Action for email change
+
+        Request data:
+            - new_email -- email what will be new user email
+        Returns:
+            if:
+                - serializer is valid
+                send code on new email
+                returns HTTP code 200
+            if
+                - serializer is not valid
+                returns HTTP code 400 and error message
+        """
+        user = self.get_object()
+        old_email = user.email
+        new_email = request.data.get("new_email")
+        if old_email == new_email:
+            return Response(
+                {"error": "You've entered the same email. Enter a different email address than your current one"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        serializer = ChangeEmailSerializer(data=request.data)
+        if serializer.is_valid():
+            send_code_to_change_email.delay(request.data.get("new_email"))
+            return Response(status=status.HTTP_200_OK)
+        else:
+            error_message = serializer.errors.get(list(serializer.errors)[0])[0]
+            return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)

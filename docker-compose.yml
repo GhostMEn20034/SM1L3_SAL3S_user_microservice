@@ -1,10 +1,25 @@
 version: "3.8"
 services:
+
+  # redis
+  redis:
+    image: redis:7.0-alpine
+    container_name: redis
+
+  # Django app
   web:
     build: .
+    container_name: django_app
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/app
     ports:
       - "8000:8000"
-    
+
+  # Celery
+  celery:
+    container_name: celery_app
+    restart: always
+    build:
+      context: .
+    command: celery -A user_microservice worker -l INFO

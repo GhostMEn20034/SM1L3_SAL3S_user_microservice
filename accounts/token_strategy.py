@@ -6,8 +6,8 @@ class CustomTokenStrategy(TokenStrategy):
     @classmethod
     def obtain(cls, user):
         refresh = RefreshToken.for_user(user)
-        full_name = user.first_name if not user.last_name else f"{user.first_name} {user.last_name}"
-        refresh["full_name"] = full_name
+        refresh["first_name"] = user.first_name
+        refresh["last_name"] = user.last_name
         return {
             "refresh": str(refresh),
             "access": str(refresh.access_token),

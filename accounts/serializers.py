@@ -4,12 +4,13 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
 from phonenumber_field.serializerfields import PhoneNumberField
 
+
 User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(max_length=128)
-    first_name = serializers.CharField(max_length=50)
+    email = serializers.EmailField(max_length=256, read_only=True)
+    first_name = serializers.CharField(max_length=50, error_messages={'blank': "First Name cannot be blank"})
     last_name = serializers.CharField(max_length=50, allow_blank=True)
     date_of_birth = serializers.DateField(allow_null=True)
     sex = serializers.ChoiceField(choices=User.SEX_CHOICES, allow_blank=True, write_only=True)
@@ -25,9 +26,12 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class PasswordSerializer(serializers.Serializer):
-    old_password = serializers.CharField(max_length=128, write_only=True)
-    new_password = serializers.CharField(max_length=128, write_only=True)
-    new_password_confirmation = serializers.CharField(max_length=128, write_only=True)
+    old_password = serializers.CharField(max_length=128, write_only=True,
+                                         error_messages={'blank': 'Old password may not be blank'})
+    new_password = serializers.CharField(max_length=128, write_only=True,
+                                         error_messages={'blank': 'Enter the new password in both fields'})
+    new_password_confirmation = serializers.CharField(max_length=128, write_only=True,
+                                                      error_messages={'blank': 'Enter the new password in both fields'})
 
     def validate(self, data):
 
@@ -43,18 +47,12 @@ class PasswordSerializer(serializers.Serializer):
         return data
 
 
+class ChangeEmailSerializer(serializers.Serializer):
+    new_email = serializers.EmailField(max_length=256, error_messages={"blank": "Email field must not be blank"})
+
+
 class UserCreateSerializer(UserCreateSerializer):
     class Meta(UserCreateSerializer.Meta):
         model = User
         fields = ('id', 'email', 'first_name', 'last_name', 'password')
 
-
-class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
-        full_name = user.first_name if not user.last_name else f"{user.first_name} {user.last_name}"
-        token['full_name'] = full_name
-
-        return token
