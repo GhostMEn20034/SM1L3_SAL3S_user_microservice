@@ -9,6 +9,13 @@ class UserRouter(SimpleRouter):
             detail=True,
             initkwargs={'suffix': 'Detail'}
         ),
+        Route(
+            url=r'^{prefix}/create',
+            mapping={'post': 'create'},
+            name='{basename}-register-user',
+            detail=True,
+            initkwargs={}
+        ),
         DynamicRoute(
             url=r'^{prefix}/{url_path}',
             name='{basename}-{url_name}',

@@ -160,9 +160,9 @@ DJOSER = {
     'SOCIAL_AUTH_ALLOWED_REDIRECT_URIS': white_list,
     'SOCIAL_AUTH_TOKEN_STRATEGY': 'accounts.token_strategy.CustomTokenStrategy',
     'SERIALIZERS': {
-        'user_create': 'accounts.serializers.UserCreateSerializer',
-        'user': 'accounts.serializers.UserCreateSerializer',
-        'current_user': 'accounts.serializers.UserCreateSerializer',
+        'user_create': 'accounts.serializers.OAuthUserCreateSerializer',
+        'user': 'accounts.serializers.OAuthUserCreateSerializer',
+        'current_user': 'accounts.serializers.OAuthUserCreateSerializer',
         'user_delete': 'djoser.serializers.UserDeleteSerializer',
         'token_create': 'accounts.serializers.CustomTokenObtainPairSerializer'
     }
@@ -191,6 +191,7 @@ SOCIAL_AUTH_IMMUTABLE_USER_FIELDS = ['first_name', 'last_name']
 CELERY_BROKER_URL = "redis://redis:6379"
 CELERY_RESULT_BACKEND = "redis://redis:6379"
 
-TWILIO_ACCOUNT_SID=os.getenv("TWILIO_ACCOUNT_SID")
-TWILIO_AUTH_TOKEN=os.getenv("TWILIO_AUTH_TOKEN")
-TWILIO_SERVICE_SID_CHANGE_EMAIL=os.getenv("TWILIO_SERVICE_SID_CHANGE_EMAIL")
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
+TWILIO_SERVICE_SID_CHANGE_EMAIL = os.getenv("TWILIO_SERVICE_SID_CHANGE_EMAIL")
+TWILIO_SERVICE_SID_SIGNUP_CONFIRMATION = os.getenv("TWILIO_SERVICE_SID_SIGNUP_CONFIRMATION")

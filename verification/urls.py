@@ -1,6 +1,10 @@
-from django.urls import path
-from .views import verify_change_email
+from django.urls import path, include
+from .routers import VerificationRouter
+from .views import VerificationViewSet
+
+router = VerificationRouter()
+router.register('verification', VerificationViewSet, basename='verification')
 
 urlpatterns = [
-    path('user/change-email/', verify_change_email, name='verify_change_email')
+    path('', include(router.urls))
 ]

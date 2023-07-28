@@ -1,23 +1,79 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.backends import AllowAllUsersModelBackend
 from rest_framework import permissions, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth import authenticate
-from .serializers import UserSerializer, PasswordSerializer, ChangeEmailSerializer
-from verification.tasks import send_code_to_change_email
+from .exceptions import UnauthorizedException
+from .serializers import UserSerializer, UserCreateSerializer, PasswordSerializer, ChangeEmailSerializer
+from verification import tasks
+from .services import encode_email_confirmation_token, decode_email_confirmation_token
 
 Account = get_user_model()
 
-class UserViewSet(viewsets.ViewSet):
 
-    permission_classes = (permissions.IsAuthenticated, )
+class UserViewSet(viewsets.ViewSet):
+    permission_classes = (permissions.IsAuthenticated,)
     queryset = Account.objects.all()
     serializer_class = UserSerializer
+
+    def get_permissions(self):
+        # Get the default permissions for the viewset
+        permission_classes = super().get_permissions()
+
+        # If the action is create, use AllowAny permission
+        if self.action == 'create':
+            permission_classes = (permissions.AllowAny(),)
+
+        if self.action == 'list':
+            permission_classes = (permissions.IsAdminUser(),)
+
+        return permission_classes
 
     def get_object(self):
         user_id = self.request.user.id
         obj = self.queryset.get(id=user_id)
         return obj
+
+    def create(self, request):
+        """
+        Action for user creation.
+
+        Request data:
+            email: user's email address
+            password1: user's password
+            password2: confirmation of user's password
+            first_name: user's first name
+            last_name: user's last name
+
+            Returns:
+            If:
+                - email is valid and not already taken
+                - password1 and password2 match and contain at least 8 characters
+                creates a new user and returns HTTP status code 201 and user data, if not - returns HTTP status code 400
+        """
+        # Validate the input data using the serializer
+        serializer = UserCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            # Save data
+            user = serializer.save()
+
+            # Send OTP to email specified by user to confirm registration
+            tasks.send_code_signup_confirmation.delay(user.email)
+
+            # Form token what will be used for email confirmation
+            token = encode_email_confirmation_token(
+                {"email": user.email, "id": user.id})
+
+            # Return a success response with the user data
+            return Response({"token": token}, status=status.HTTP_201_CREATED)
+
+        else:
+            # if serializer is not valid return error message
+            error_message = serializer.errors.get(list(serializer.errors)[0])[0]
+
+            return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request):
         user = self.get_object()
@@ -75,7 +131,7 @@ class UserViewSet(viewsets.ViewSet):
             if:
                 - serializer data is valid
                 updates fields in the user model
-                returns HTTP code 200
+                and returns HTTP code 200
         """
         user = self.get_object()
 
@@ -104,7 +160,7 @@ class UserViewSet(viewsets.ViewSet):
             if:
                 - serializer is valid
                 send code on new email
-                returns HTTP code 200
+                and returns HTTP code 200
             if
                 - serializer is not valid
                 returns HTTP code 400 and error message
@@ -117,10 +173,39 @@ class UserViewSet(viewsets.ViewSet):
                 {"error": "You've entered the same email. Enter a different email address than your current one"},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        # Check if there is a user with the new_email already exists
+        user_exists = self.queryset.filter(email=new_email).exists()
+
+        print(user_exists)
+        if user_exists:
+            return Response(
+                {"error": "User with the same email already exists"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         serializer = ChangeEmailSerializer(data=request.data)
         if serializer.is_valid():
-            send_code_to_change_email.delay(request.data.get("new_email"))
+            tasks.send_code_to_change_email.delay(request.data.get("new_email"))
             return Response(status=status.HTTP_200_OK)
         else:
             error_message = serializer.errors.get(list(serializer.errors)[0])[0]
             return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+
+    def post(self, request, *args, **kwargs):
+        backend = AllowAllUsersModelBackend()
+
+        user = backend.authenticate(request, email=request.data.get("email"), password=request.data.get("password"))
+
+        if not user:
+            raise UnauthorizedException
+
+        if not user.is_active:
+            tasks.send_code_signup_confirmation.delay(user.email)
+            token = encode_email_confirmation_token({"email": user.email, "id": user.id})
+            return Response({"token": token}, status=status.HTTP_400_BAD_REQUEST)
+
+        return super().post(request, *args, **kwargs)

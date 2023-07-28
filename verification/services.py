@@ -30,6 +30,8 @@ def check_code(service_sid, email, code):
     )
     return verification.status == 'approved'
 
-
 def check_code_to_change_email(email, code):
     return check_code(settings.TWILIO_SERVICE_SID_CHANGE_EMAIL, email, code)
+
+def check_code_signup_confirmation(email, code):
+    return check_code(settings.TWILIO_SERVICE_SID_SIGNUP_CONFIRMATION, email, code)
