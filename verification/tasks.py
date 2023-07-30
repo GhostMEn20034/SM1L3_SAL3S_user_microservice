@@ -11,3 +11,8 @@ def send_code_to_change_email(email):
 @shared_task
 def send_code_signup_confirmation(email):
     send_code(settings.TWILIO_SERVICE_SID_SIGNUP_CONFIRMATION, email)
+
+
+@shared_task
+def send_code_reset_password(email):
+    send_code(settings.TWILIO_SERVICE_SID_PASSWORD_RESET, email)

@@ -1,12 +1,12 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import AllowAllUsersModelBackend
 from rest_framework import permissions, viewsets, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth import authenticate
 from .exceptions import UnauthorizedException
-from .serializers import UserSerializer, UserCreateSerializer, PasswordSerializer, ChangeEmailSerializer
+from .serializers import UserSerializer, UserCreateSerializer, PasswordSerializer, EmailSerializer
 from verification import tasks
 from .services import encode_email_confirmation_token, decode_email_confirmation_token
 
@@ -168,29 +168,31 @@ class UserViewSet(viewsets.ViewSet):
         user = self.get_object()
         old_email = user.email
         new_email = request.data.get("new_email")
+
+        # Validate new email
+        serializer = EmailSerializer(data={"email": new_email})
+        if not serializer.is_valid():
+            error_message = serializer.errors.get(list(serializer.errors)[0])[0]
+            return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check whether new email doesn't match the previous one
         if old_email == new_email:
             return Response(
                 {"error": "You've entered the same email. Enter a different email address than your current one"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Check if there is a user with the new_email already exists
+        # Check if there is a user with the new_email
         user_exists = self.queryset.filter(email=new_email).exists()
-
-        print(user_exists)
         if user_exists:
             return Response(
                 {"error": "User with the same email already exists"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        serializer = ChangeEmailSerializer(data=request.data)
-        if serializer.is_valid():
-            tasks.send_code_to_change_email.delay(request.data.get("new_email"))
-            return Response(status=status.HTTP_200_OK)
-        else:
-            error_message = serializer.errors.get(list(serializer.errors)[0])[0]
-            return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
+        # if all ok, send OTP to new email address to verify it
+        tasks.send_code_to_change_email.delay(request.data.get("new_email"))
+        return Response(status=status.HTTP_200_OK)
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -209,3 +211,36 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             return Response({"token": token}, status=status.HTTP_400_BAD_REQUEST)
 
         return super().post(request, *args, **kwargs)
+
+@api_view(['POST'])
+def reset_password(request):
+    """
+        Action for password reset
+
+        Request data:
+            - email -- The email to which the OTP will be sent
+
+        Sends OTP to email and returns status HTTP 200 OK if all OK
+    """
+    email = request.data.get("email")
+
+    # Validate email
+    serializer = EmailSerializer(data={"email": email})
+    if not serializer.is_valid():
+        error_message = serializer.errors.get(list(serializer.errors)[0])[0]
+        return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Check if there is not a user with this email
+    user = Account.objects.filter(email=email).first()
+    if not user:
+        return Response(
+            {"error": "User with this email doesn't exist"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Create token that will be used for OTP resend
+    token = encode_email_confirmation_token({"email": user.email, "id": user.id})
+
+    # Send the OTP to email specified by the user
+    tasks.send_code_reset_password.delay(user.email)
+    return Response(data={"token": token},status=status.HTTP_200_OK)

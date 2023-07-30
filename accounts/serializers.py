@@ -46,8 +46,8 @@ class PasswordSerializer(serializers.Serializer):
         return data
 
 
-class ChangeEmailSerializer(serializers.Serializer):
-    new_email = serializers.EmailField(max_length=256, error_messages={"blank": "Email field must not be blank"})
+class EmailSerializer(serializers.Serializer):
+    email = serializers.EmailField(max_length=256, error_messages={"blank": "Email field must not be blank"})
 
 
 class OAuthUserCreateSerializer(UserCreateSerializer):

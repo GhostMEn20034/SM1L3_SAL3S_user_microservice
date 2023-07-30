@@ -14,12 +14,14 @@ def change_email(user_id, new_email):
     return True
 
 
-def encode_email_confirmation_token(data_to_encode):
+def encode_email_confirmation_token(data_to_encode, exp=10):
     """
     Encodes dictionary to base64 bytes
+    :param data_to_encode -- data that will be encoded
+    :param exp - time expiration of token
     """
     now = datetime.datetime.now()
-    data_to_encode["exp"] = str(now + datetime.timedelta(minutes=10))
+    data_to_encode["exp"] = str(now + datetime.timedelta(minutes=exp))
     json_string = json.dumps(data_to_encode)
     base64_bytes = base64.b64encode(json_string.encode())
     return base64_bytes
