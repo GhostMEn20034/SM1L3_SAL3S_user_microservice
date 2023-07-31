@@ -6,4 +6,5 @@ urlpatterns = [
     path('api/auth/social/', include('djoser.social.urls')),
     path('api/', include('accounts.urls')),
     path('api/', include('verification.urls')),
+    path('api/', include('addresses.urls'))
 ]

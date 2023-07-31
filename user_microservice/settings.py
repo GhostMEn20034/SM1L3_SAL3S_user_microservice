@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     # Own apps
     'accounts',
     'verification',
+    'addresses',
     # Third-party apps
     'rest_framework',
     'rest_framework_simplejwt',
