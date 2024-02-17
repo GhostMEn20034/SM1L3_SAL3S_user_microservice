@@ -1,13 +1,9 @@
 from datetime import timedelta
-from dotenv import load_dotenv
 from pathlib import Path
 import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-dotenv_path = BASE_DIR / '.env.dev'
-
-load_dotenv(dotenv_path)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -17,7 +13,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = bool(os.getenv("DEBUG", default=0))
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS").split(", ")
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS").split(",")
 AUTH_USER_MODEL = "accounts.Account"
 AUTHENTICATION_BACKENDS = (
     # Google Auth
@@ -36,9 +32,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # Own apps
-    'accounts',
-    'verification',
-    'addresses',
+    'apps.core',
+    'apps.accounts',
+    'apps.verification',
+    'apps.addresses',
+
     # Third-party apps
     'rest_framework',
     'rest_framework_simplejwt',
@@ -163,13 +161,13 @@ DJOSER = {
     'LOGIN_FIELD': 'email',
     'USER_CREATE_PASSWORD_RETYPE': True,
     'SOCIAL_AUTH_ALLOWED_REDIRECT_URIS': white_list,
-    'SOCIAL_AUTH_TOKEN_STRATEGY': 'accounts.token_strategy.CustomTokenStrategy',
+    'SOCIAL_AUTH_TOKEN_STRATEGY': 'apps.accounts.token_strategy.CustomTokenStrategy',
     'SERIALIZERS': {
-        'user_create': 'accounts.serializers.OAuthUserCreateSerializer',
-        'user': 'accounts.serializers.OAuthUserCreateSerializer',
-        'current_user': 'accounts.serializers.OAuthUserCreateSerializer',
+        'user_create': 'apps.accounts.serializers.OAuthUserCreateSerializer',
+        'user': 'apps.accounts.serializers.OAuthUserCreateSerializer',
+        'current_user': 'apps.accounts.serializers.OAuthUserCreateSerializer',
         'user_delete': 'djoser.serializers.UserDeleteSerializer',
-        'token_create': 'accounts.serializers.CustomTokenObtainPairSerializer'
+        'token_create': 'apps.accounts.serializers.CustomTokenObtainPairSerializer'
     }
 }
 

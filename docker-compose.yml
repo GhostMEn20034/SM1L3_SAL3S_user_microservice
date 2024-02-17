@@ -10,11 +10,31 @@ services:
   web:
     build: .
     container_name: django_app
-    command: python manage.py runserver 0.0.0.0:8000
+    command: >
+      sh -c "python manage.py wait_for_db &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/app
     ports:
       - "8000:8000"
+    environment:
+      - SOCIAL_AUTH_GOOGLE_OAUTH2_KEY=${SOCIAL_AUTH_GOOGLE_OAUTH2_KEY}
+      - SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET=${SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET}
+      - SECRET_KEY=${SECRET_KEY}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_SERVICE_SID_CHANGE_EMAIL=${TWILIO_SERVICE_SID_CHANGE_EMAIL}
+      - TWILIO_SERVICE_SID_SIGNUP_CONFIRMATION=${TWILIO_SERVICE_SID_SIGNUP_CONFIRMATION}
+      - TWILIO_SERVICE_SID_PASSWORD_RESET=${TWILIO_SERVICE_SID_PASSWORD_RESET}
+      - DEBUG=${DEBUG}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - SQL_ENGINE=${SQL_ENGINE}
+      - SQL_DATABASE=${SQL_DATABASE}
+      - SQL_USER=${SQL_USER}
+      - SQL_PASSWORD=${SQL_PASSWORD}
+      - SQL_HOST=${SQL_HOST}
+      - SQL_PORT=${SQL_PORT}
     depends_on:
       - db
 
@@ -23,13 +43,16 @@ services:
     container_name: postgres_db
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+      - ./init-database.sh:/docker-entrypoint-initdb.d/init-database.sh
     environment:
       - POSTGRES_PASSWORD=${SUPER_USER_PWD}
+      - SQL_DATABASE=${SQL_DATABASE}
+      - SQL_USER=${SQL_USER}
+      - SQL_PASSWORD=${SQL_PASSWORD}
 
   # Celery
   celery:
     container_name: celery_app
-    restart: always
     build:
       context: .
     command: celery -A user_microservice worker -l INFO
