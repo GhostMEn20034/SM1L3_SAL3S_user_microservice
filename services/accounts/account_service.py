@@ -3,7 +3,7 @@ from rest_framework.response import Response
 
 from apps.accounts.serializers import UserCreateSerializer, PasswordSerializer, EmailSerializer
 from services.confirmation_token_codec import ConfirmationTokenCodec
-# from apps.verification import tasks
+from apps.verification import tasks
 from django.contrib.auth import authenticate
 
 
@@ -18,7 +18,7 @@ class AccountService:
             # Save data
             user = serializer.save()
             # Send OTP to email specified by user to confirm registration
-            # tasks.send_code_signup_confirmation.delay(user.email)
+            tasks.send_code_signup_confirmation.send(user.email)
             # Form token what will be used for email confirmation
             token = ConfirmationTokenCodec.encode_email_confirmation_token(
                 {"email": user.email, "id": user.id})
@@ -88,5 +88,5 @@ class AccountService:
             )
 
         # if all ok, send OTP to new email address to verify it
-        # tasks.send_code_to_change_email.delay(new_email)
+        tasks.send_code_to_change_email.send(new_email)
         return Response(status=status.HTTP_200_OK)

@@ -26,7 +26,7 @@ class ConfirmationTokenCodec:
         """
         Decodes token with user information encoded by base64
         """
-        json_strings = base64.b64decode(token).decode()
+        json_strings = base64.b64decode(token)
         dict_object = json.loads(json_strings)
         now_dt = datetime.now()
         exp = dict_object.get("exp")

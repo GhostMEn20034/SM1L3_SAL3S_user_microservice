@@ -127,4 +127,4 @@ def reset_password(request):
     email = request.data.get("email")
     verification_service = VerificationService(Account.objects.all())
     token = verification_service.reset_password_request(email)
-    return Response(data={"token": str(token)},status=status.HTTP_200_OK)
+    return Response(data={"token": token},status=status.HTTP_200_OK)

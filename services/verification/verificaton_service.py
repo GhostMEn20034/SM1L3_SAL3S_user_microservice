@@ -6,7 +6,7 @@ from twilio.base.exceptions import TwilioRestException
 from apps.accounts.serializers import EmailSerializer
 from services.accounts.common import get_tokens_for_user
 from services.confirmation_token_codec import ConfirmationTokenCodec
-# from apps.verification import tasks
+from apps.verification import tasks
 from services.verification.code_checker import CodeChecker
 
 class VerificationService:
@@ -30,7 +30,7 @@ class VerificationService:
         # Create token that will be used for OTP resend
         token = ConfirmationTokenCodec.encode_email_confirmation_token({"email": user.email, "id": user.id})
         # Send the OTP to email specified by the user
-        # tasks.send_code_reset_password.delay(user.email)
+        tasks.send_code_reset_password.send(user.email)
         return token
 
     def verify_email_change(self, email, code) -> Optional[Response]:
@@ -104,10 +104,10 @@ class VerificationService:
         if not user:
             return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "User doesn't exists"})
 
-        # if action_type == 'signup-confirmation':
-            # tasks.send_code_signup_confirmation.delay(user.email)
-        # elif action_type == 'reset-password':
-            # tasks.send_code_reset_password.delay(user.email)
+        if action_type == 'signup-confirmation':
+            tasks.send_code_signup_confirmation.send(user.email)
+        elif action_type == 'reset-password':
+            tasks.send_code_reset_password.send(user.email)
 
         new_token = ConfirmationTokenCodec.encode_email_confirmation_token(
             {"email": token_payload["email"], "id": token_payload["id"]})

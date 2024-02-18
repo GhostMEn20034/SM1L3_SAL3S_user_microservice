@@ -18,25 +18,21 @@ services:
       - .:/app
     ports:
       - "8000:8000"
-    environment:
-      - SOCIAL_AUTH_GOOGLE_OAUTH2_KEY=${SOCIAL_AUTH_GOOGLE_OAUTH2_KEY}
-      - SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET=${SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET}
-      - SECRET_KEY=${SECRET_KEY}
-      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
-      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
-      - TWILIO_SERVICE_SID_CHANGE_EMAIL=${TWILIO_SERVICE_SID_CHANGE_EMAIL}
-      - TWILIO_SERVICE_SID_SIGNUP_CONFIRMATION=${TWILIO_SERVICE_SID_SIGNUP_CONFIRMATION}
-      - TWILIO_SERVICE_SID_PASSWORD_RESET=${TWILIO_SERVICE_SID_PASSWORD_RESET}
-      - DEBUG=${DEBUG}
-      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
-      - SQL_ENGINE=${SQL_ENGINE}
-      - SQL_DATABASE=${SQL_DATABASE}
-      - SQL_USER=${SQL_USER}
-      - SQL_PASSWORD=${SQL_PASSWORD}
-      - SQL_HOST=${SQL_HOST}
-      - SQL_PORT=${SQL_PORT}
+    env_file:
+      - .env
     depends_on:
       - db
+
+  dramatiq_worker:
+    build: .
+    container_name: dramatiq_worker
+    command: python manage.py rundramatiq
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
 
   db:
     image: postgres:15.4-alpine
@@ -49,15 +45,6 @@ services:
       - SQL_DATABASE=${SQL_DATABASE}
       - SQL_USER=${SQL_USER}
       - SQL_PASSWORD=${SQL_PASSWORD}
-
-  # Celery
-  celery:
-    container_name: celery_app
-    build:
-      context: .
-    command: celery -A user_microservice worker -l INFO
-    depends_on:
-      - redis
 
 volumes:
   postgres_data:

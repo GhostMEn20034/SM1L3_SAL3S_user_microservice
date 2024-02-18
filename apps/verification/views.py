@@ -7,6 +7,7 @@ from rest_framework.viewsets import ViewSet
 from services.verification.verificaton_service import VerificationService
 from services.accounts.common import change_email
 
+
 Account = get_user_model()
 
 
