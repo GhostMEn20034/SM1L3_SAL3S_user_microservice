@@ -64,7 +64,7 @@ class TestLogin(APITestCase):
         # Check that the response status is 401 UNAUTHORIZED
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    @mock.patch('verification.tasks.send_code_signup_confirmation.delay')
+    @mock.patch('apps.verification.tasks.send_code_signup_confirmation.send')
     def test_login_as_inactive_user(self, mocked_send_email):
         """User that enter incorrect credentials fails authentication and gets code to the email"""
 

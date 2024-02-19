@@ -18,7 +18,7 @@ class VerificationViewSet(ViewSet):
         super().__init__(*args, **kwargs)
         self.verification_service = VerificationService(self.queryset)
 
-    @action(detail=True, methods=['post'], url_path='change-email', url_name='verify_change_email')
+    @action(detail=True, methods=['post'], url_path='change-email/confirm', url_name='confirm_email_change')
     def verify_change_email(self, request):
         """
            Verifies OTP entered by the user
@@ -75,7 +75,7 @@ class VerificationViewSet(ViewSet):
         action_type = request.data.get("action_type")
         return self.verification_service.resend_otp(token, action_type)
 
-    @action(detail=True, methods=['post'], url_path='confirm-password-reset-request',
+    @action(detail=True, methods=['post'], url_path='reset-password/confirm',
             url_name='confirm_reset_password_request')
     def confirm_reset_password_request(self, request):
         """
@@ -90,7 +90,7 @@ class VerificationViewSet(ViewSet):
 
         return self.verification_service.confirm_reset_password_request(token, request.data.get("code"))
 
-    @action(detail=True, methods=['post'], url_path='reset-password', url_name='reset_password')
+    @action(detail=True, methods=['post'], url_path='reset-password/update', url_name='set_new_password')
     def reset_password(self, request):
         """
            Verifies token provided by the user and change user's password

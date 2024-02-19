@@ -17,5 +17,5 @@ urlpatterns = [
         path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
         path('token/blacklist/', TokenBlacklistView.as_view(), name='token_blacklist'),
     ])),
-    path('user/reset-password/', views.reset_password, name='reset_password')
+    path('user/reset-password/request', views.reset_password, name='reset_password_request')
 ]

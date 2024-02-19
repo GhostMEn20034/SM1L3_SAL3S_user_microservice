@@ -94,7 +94,7 @@ class UserViewSet(viewsets.ViewSet):
         user = self.get_object()
         return self.account_service.update_user(user, request.data)
 
-    @action(detail=True, methods=['post'], url_path='change-email', url_name='change_email')
+    @action(detail=True, methods=['post'], url_path='change-email/request', url_name='change_email_request')
     def change_email(self, request):
         """
         Action for email change
