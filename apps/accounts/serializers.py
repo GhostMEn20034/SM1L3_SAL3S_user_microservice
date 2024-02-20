@@ -6,7 +6,17 @@ from phonenumber_field.serializerfields import PhoneNumberField
 User = get_user_model()
 
 
+class UserSerializerAllFields(serializers.ModelSerializer):
+    """Serializer for getting all user's information"""
+    class Meta:
+        model = User
+        exclude = ('password', )
+
+
 class UserSerializer(serializers.ModelSerializer):
+    """
+    Serializer for getting part of user's information
+    """
     email = serializers.EmailField(max_length=256, read_only=True)
     first_name = serializers.CharField(max_length=50, error_messages={'blank': "First Name cannot be blank"})
     last_name = serializers.CharField(max_length=50, allow_blank=True)

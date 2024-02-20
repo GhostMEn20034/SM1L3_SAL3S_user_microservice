@@ -11,6 +11,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY")
 
+# If you want to use API Routes intended for microservices communication, you need to specify this key.
+# WARNING: Store microservice key in .env file or server environment variables
+MICROSERVICE_KEY = os.getenv("MICROSERVICE_KEY")
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = bool(os.getenv("DEBUG", default=0))
 
@@ -19,7 +23,6 @@ AUTH_USER_MODEL = "accounts.Account"
 AUTHENTICATION_BACKENDS = (
     # Google Auth
     'social_core.backends.google.GoogleOAuth2',
-
     # logging with username & password
     'django.contrib.auth.backends.ModelBackend',
 )

@@ -3,7 +3,7 @@ from rest_framework.routers import Route, DynamicRoute, SimpleRouter
 class UserRouter(SimpleRouter):
     routes = [
         Route(
-            url=r'^{prefix}/personal-info',
+            url='{prefix}/info',
             mapping={'get': 'retrieve'},
             name='{basename}_personal_info',
             detail=True,

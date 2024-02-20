@@ -1,16 +1,33 @@
 from rest_framework import status
 from rest_framework.response import Response
 
-from apps.accounts.serializers import UserCreateSerializer, PasswordSerializer, EmailSerializer
+from apps.accounts.serializers import (
+    UserCreateSerializer,
+    PasswordSerializer,
+    EmailSerializer,
+    UserSerializerAllFields
+)
 from services.confirmation_token_codec import ConfirmationTokenCodec
 from apps.verification import tasks
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_user_model
 
+Account = get_user_model()
 
 class AccountService:
     def __init__(self, account_queryset, user_serializer):
         self.account_queryset = account_queryset
         self.user_serializer = user_serializer
+
+    def get_user(self, user_data):
+        serializer = self.user_serializer(user_data)
+        return Response(serializer.data)
+
+    def find_user_by_id(self, user_id):
+        try:
+            user = self.account_queryset.get(pk=user_id)
+            return user, None
+        except Account.DoesNotExist:
+            return None, Response(status=status.HTTP_404_NOT_FOUND, data={"error": "User not found"})
 
     def create_user(self, data):
         serializer = UserCreateSerializer(data=data)
@@ -29,9 +46,7 @@ class AccountService:
             error_message = serializer.errors.get(list(serializer.errors)[0])[0]
             return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
 
-    def get_user(self, user_data):
-        serializer = self.user_serializer(user_data)
-        return Response(serializer.data)
+
 
     def change_password(self, user_object, request_data):
         serializer = PasswordSerializer(data=request_data)
@@ -90,3 +105,29 @@ class AccountService:
         # if all ok, send OTP to new email address to verify it
         tasks.send_code_to_change_email.send(new_email)
         return Response(status=status.HTTP_200_OK)
+
+
+    def get_full_user_info(self, user_id, session_id=None):
+        """
+        Returns user information and his cart.
+        if user is anonymous then, it returns only cart and empty user field.
+        :param user_id: User's identifier.
+        :param session_id: Cart's uuid identifier.
+        """
+        if user_id is None:
+            return Response(data={"user": None, "cart": {}}, status=status.HTTP_200_OK)
+
+        user, error_response = self.find_user_by_id(user_id)
+        if error_response:
+            return error_response
+
+        serialized_user = self.user_serializer(instance=user)
+        return Response(data={"user": serialized_user.data, "cart": {}}, status=status.HTTP_200_OK)
+
+    def check_user(self, user_id):
+        user, error_response = self.find_user_by_id(user_id)
+        if error_response:
+            return error_response
+
+        serializer = UserSerializerAllFields(instance=user)
+        return Response(serializer.data)

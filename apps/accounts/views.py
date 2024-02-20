@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from services.accounts.account_service import AccountService
 from .serializers import UserSerializer
 from services.verification.verificaton_service import VerificationService
+from .permissions import IsMicroservice
 
 Account = get_user_model()
 
@@ -114,6 +115,32 @@ class UserViewSet(viewsets.ViewSet):
         new_email = request.data.get("new_email")
         return self.account_service.change_email(user, new_email)
 
+    @action(detail=True, methods=['get'], url_path='full-info', permission_classes=[permissions.AllowAny, ])
+    def get_full_information(self, request):
+        """
+        Action that returns user's information, cart data.
+        If user is not authenticated, it returns only cart data.
+        If there's no cart data, it returns new cart for anonymous user.
+        """
+        user_id = request.user.id
+        return self.account_service.get_full_user_info(user_id)
+
+    @action(detail=True, methods=['post'], url_path='check',
+            url_name='check_user', permission_classes=[IsMicroservice, ])
+    def check_user(self, request):
+        """
+        THis route checks whether the user exists and if it does,
+        it will return all user's data.
+        Request Body:
+        user_id int
+        microservice_key str - since this route is only for microservices communication,
+                               it requires a special key to ensure that
+                               this request is made by another microservice.
+        """
+        user_id = request.data.get("user_id")
+        return self.account_service.check_user(user_id)
+
+
 @api_view(['POST'])
 def reset_password(request):
     """
@@ -127,4 +154,4 @@ def reset_password(request):
     email = request.data.get("email")
     verification_service = VerificationService(Account.objects.all())
     token = verification_service.reset_password_request(email)
-    return Response(data={"token": token},status=status.HTTP_200_OK)
+    return Response(data={"token": token}, status=status.HTTP_200_OK)
