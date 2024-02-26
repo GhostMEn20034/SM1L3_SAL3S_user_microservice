@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'apps.accounts',
     'apps.verification',
     'apps.addresses',
+    'apps.products',
 
     # Third-party apps
     'rest_framework',
@@ -232,3 +233,7 @@ TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 TWILIO_SERVICE_SID_CHANGE_EMAIL = os.getenv("TWILIO_SERVICE_SID_CHANGE_EMAIL")
 TWILIO_SERVICE_SID_SIGNUP_CONFIRMATION = os.getenv("TWILIO_SERVICE_SID_SIGNUP_CONFIRMATION")
 TWILIO_SERVICE_SID_PASSWORD_RESET = os.getenv("TWILIO_SERVICE_SID_PASSWORD_RESET")
+
+# AMPQ settings
+AMPQ_CONNECTION_URL = os.getenv("AMPQ_CONNECTION_URL")
+PRODUCT_CRUD_EXCHANGE_TOPIC_NAME = os.getenv("PRODUCT_CRUD_EXCHANGE_TOPIC_NAME")

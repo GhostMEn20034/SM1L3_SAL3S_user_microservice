@@ -34,6 +34,15 @@ services:
     depends_on:
       - redis
 
+  product_queue_listener:
+    build: .
+    container_name: product_queue_listener
+    command: python manage.py launch_product_queue_listener
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+
   db:
     image: postgres:15.4-alpine
     container_name: postgres_db
