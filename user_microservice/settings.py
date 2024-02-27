@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'social_django',
     'corsheaders',
     'django_dramatiq',
+    'dramatiq_crontab',
 ]
 
 MIDDLEWARE = [
@@ -103,7 +104,6 @@ DATABASES = {
 }
 
 # Dramatiq Tasks
-
 DRAMATIQ_BROKER_URL = os.getenv("DRAMATIQ_BROKER_URL", "redis://127.0.0.1:6379/0")
 DRAMATIQ_BROKER = {
     "BROKER": "dramatiq.brokers.redis.RedisBroker",
@@ -117,6 +117,10 @@ DRAMATIQ_BROKER = {
         "django_dramatiq.middleware.AdminMiddleware",
         "django_dramatiq.middleware.DbConnectionsMiddleware",
     ]
+}
+
+DRAMATIQ_CRONTAB = {
+    "REDIS_URL": os.getenv("DRAMATIQ_CRONTAB_BROKER_URL", "redis://127.0.0.1:6379/0"),
 }
 
 DRAMATIQ_RESULT_BACKEND = {
@@ -188,6 +192,8 @@ SIMPLE_JWT = {
     ),
 }
 
+FLUSH_EXPIRED_TOKEN_INTERVAL_HOURS = int(os.getenv("FLUSH_EXPIRED_TOKEN_PERIOD_HOURS", 24))
+
 white_list = ['http://localhost:3000/signin']
 
 DJOSER = {
@@ -196,11 +202,10 @@ DJOSER = {
     'SOCIAL_AUTH_ALLOWED_REDIRECT_URIS': white_list,
     'SOCIAL_AUTH_TOKEN_STRATEGY': 'apps.accounts.token_strategy.CustomTokenStrategy',
     'SERIALIZERS': {
-        'user_create': 'apps.accounts.serializers.OAuthUserCreateSerializer',
-        'user': 'apps.accounts.serializers.OAuthUserCreateSerializer',
-        'current_user': 'apps.accounts.serializers.OAuthUserCreateSerializer',
+        'user_create': 'apps.accounts.serializers.djoser_serializers.OAuthUserCreateSerializer',
+        'user': 'apps.accounts.serializers.djoser_serializers.OAuthUserCreateSerializer',
+        'current_user': 'apps.accounts.serializers.djoser_serializers.OAuthUserCreateSerializer',
         'user_delete': 'djoser.serializers.UserDeleteSerializer',
-        'token_create': 'apps.accounts.serializers.CustomTokenObtainPairSerializer'
     }
 }
 
@@ -220,14 +225,14 @@ CORS_ORIGIN_WHITELIST = [
 
 CORS_ALLOW_CREDENTIALS = True
 
+# Google OAuth settings
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv("SOCIAL_AUTH_GOOGLE_OAUTH2_KEY")
-
 SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv("SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET")
 
 SOCIAL_AUTH_GOOGLE_OAUTH2_EXTRA_DATA = ['first_name', 'last_name']
-
 SOCIAL_AUTH_IMMUTABLE_USER_FIELDS = ['first_name', 'last_name']
 
+# Twilio Settings
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 TWILIO_SERVICE_SID_CHANGE_EMAIL = os.getenv("TWILIO_SERVICE_SID_CHANGE_EMAIL")

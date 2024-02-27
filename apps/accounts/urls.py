@@ -1,6 +1,10 @@
 from django.urls import path, include
 from . import views
-from.custom_obtain_tokens_view import CustomTokenObtainPairView
+from .custom_obtain_tokens_views import (
+    TokenObtainPairViewForRegularUsers,
+    TokenObtainPairViewForStaff,
+    TokenRefreshViewForStaff
+)
 from .routers import UserRouter
 from rest_framework_simplejwt.views import (
     TokenBlacklistView,
@@ -13,7 +17,9 @@ router.register('user', views.UserViewSet, basename='user')
 urlpatterns = [
     path('', include(router.urls)),
     path('auth/', include([
-        path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+        path('token/', TokenObtainPairViewForRegularUsers.as_view(), name='token_obtain_pair'),
+        path('staff-token/', TokenObtainPairViewForStaff.as_view(), name='staff_token_obtain_pair'),
+        path('staff-token/refresh/', TokenRefreshViewForStaff.as_view(), name='staff_token_refresh'),
         path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
         path('token/blacklist/', TokenBlacklistView.as_view(), name='token_blacklist'),
     ])),

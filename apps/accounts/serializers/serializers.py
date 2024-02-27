@@ -1,4 +1,3 @@
-from djoser.serializers import UserCreateSerializer
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from phonenumber_field.serializerfields import PhoneNumberField
@@ -58,13 +57,6 @@ class PasswordSerializer(serializers.Serializer):
 
 class EmailSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=256, error_messages={"blank": "Email field must not be blank"})
-
-
-class OAuthUserCreateSerializer(UserCreateSerializer):
-    class Meta(UserCreateSerializer.Meta):
-        model = User
-        fields = ('id', 'email', 'first_name', 'last_name', 'password')
-
 
 class UserCreateSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=255, write_only=True,

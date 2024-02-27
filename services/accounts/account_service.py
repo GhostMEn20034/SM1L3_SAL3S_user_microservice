@@ -1,7 +1,7 @@
 from rest_framework import status
 from rest_framework.response import Response
 
-from apps.accounts.serializers import (
+from apps.accounts.serializers.serializers import (
     UserCreateSerializer,
     PasswordSerializer,
     EmailSerializer,

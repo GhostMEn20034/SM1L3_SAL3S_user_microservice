@@ -4,9 +4,10 @@ from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 
 from services.accounts.account_service import AccountService
-from .serializers import UserSerializer
+from .serializers.serializers import UserSerializer
 from services.verification.verificaton_service import VerificationService
 from .permissions import IsMicroservice
+
 
 Account = get_user_model()
 

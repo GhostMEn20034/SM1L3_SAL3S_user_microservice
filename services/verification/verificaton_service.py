@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from twilio.base.exceptions import TwilioRestException
 
-from apps.accounts.serializers import EmailSerializer
+from apps.accounts.serializers.serializers import EmailSerializer
 from services.accounts.common import get_tokens_for_user
 from services.confirmation_token_codec import ConfirmationTokenCodec
 from apps.verification import tasks

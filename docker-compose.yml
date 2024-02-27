@@ -34,6 +34,17 @@ services:
     depends_on:
       - redis
 
+  dramatiq_crontab_worker:
+    build: .
+    container_name: dramatiq_crontab_worker
+    command: python3 manage.py crontab
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+
   product_queue_listener:
     build: .
     container_name: product_queue_listener
