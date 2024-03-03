@@ -7,6 +7,7 @@ from services.accounts.account_service import AccountService
 from .serializers.serializers import UserSerializer
 from services.verification.verificaton_service import VerificationService
 from .permissions import IsMicroservice
+from dependencies.service_dependencies.accounts import get_account_service
 
 
 Account = get_user_model()
@@ -19,8 +20,7 @@ class UserViewSet(viewsets.ViewSet):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.account_service = AccountService(account_queryset=self.queryset,
-                                              user_serializer=self.serializer_class)
+        self.account_service: AccountService = get_account_service(self.queryset, self.serializer_class)
 
     def get_permissions(self):
         # Get the default permissions for the viewset
@@ -123,8 +123,9 @@ class UserViewSet(viewsets.ViewSet):
         If user is not authenticated, it returns only cart data.
         If there's no cart data, it returns new cart for anonymous user.
         """
+        cart_uuid = request.query_params.get('cart_uuid')
         user_id = request.user.id
-        return self.account_service.get_full_user_info(user_id)
+        return self.account_service.get_full_user_info(user_id, cart_uuid)
 
     @action(detail=True, methods=['post'], url_path='check',
             url_name='check_user', permission_classes=[IsMicroservice, ])

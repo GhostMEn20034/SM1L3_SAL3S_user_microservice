@@ -18,7 +18,7 @@ cryptography==41.0.1
 defusedxml==0.7.1
 Deprecated==1.2.14
 dj-database-url==2.0.0
-Django==4.2.3
+Django==5.0.2
 django-cors-headers==4.1.0
 django-countries==7.5.1
 django-dramatiq==0.11.6

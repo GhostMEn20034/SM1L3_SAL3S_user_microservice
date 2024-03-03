@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'apps.verification',
     'apps.addresses',
     'apps.products',
+    'apps.carts',
 
     # Third-party apps
     'rest_framework',
@@ -100,8 +101,10 @@ DATABASES = {
         "PASSWORD": os.getenv("SQL_PASSWORD", "password"),
         "HOST": os.getenv("SQL_HOST", "localhost"),
         "PORT": os.getenv("SQL_PORT", "5432"),
+        "CONN_MAX_AGE": int(os.getenv("SQL_CONN_MAX_AGE", 0)),
     }
 }
+
 
 # Dramatiq Tasks
 DRAMATIQ_BROKER_URL = os.getenv("DRAMATIQ_BROKER_URL", "redis://127.0.0.1:6379/0")
@@ -205,7 +208,6 @@ DJOSER = {
         'user_create': 'apps.accounts.serializers.djoser_serializers.OAuthUserCreateSerializer',
         'user': 'apps.accounts.serializers.djoser_serializers.OAuthUserCreateSerializer',
         'current_user': 'apps.accounts.serializers.djoser_serializers.OAuthUserCreateSerializer',
-        'user_delete': 'djoser.serializers.UserDeleteSerializer',
     }
 }
 

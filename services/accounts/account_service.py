@@ -1,6 +1,7 @@
 from rest_framework import status
 from rest_framework.response import Response
 
+from services.carts.cart_service import CartService
 from apps.accounts.serializers.serializers import (
     UserCreateSerializer,
     PasswordSerializer,
@@ -14,9 +15,10 @@ from django.contrib.auth import authenticate, get_user_model
 Account = get_user_model()
 
 class AccountService:
-    def __init__(self, account_queryset, user_serializer):
+    def __init__(self, account_queryset, user_serializer, cart_service):
         self.account_queryset = account_queryset
         self.user_serializer = user_serializer
+        self.cart_service: CartService = cart_service
 
     def get_user(self, user_data):
         serializer = self.user_serializer(user_data)
@@ -30,6 +32,9 @@ class AccountService:
             return None, Response(status=status.HTTP_404_NOT_FOUND, data={"error": "User not found"})
 
     def create_user(self, data):
+        # get cart uuid from which we need to copy cart items
+        copy_cart_items_from = data.get('copy_cart_items_from')
+
         serializer = UserCreateSerializer(data=data)
         if serializer.is_valid():
             # Save data
@@ -39,6 +44,10 @@ class AccountService:
             # Form token what will be used for email confirmation
             token = ConfirmationTokenCodec.encode_email_confirmation_token(
                 {"email": user.email, "id": user.id})
+
+            if copy_cart_items_from is not None:
+                self.cart_service.copy_cart_items(user.id, copy_cart_items_from)
+
             # Return a success response with the user data
             return Response({"token": token}, status=status.HTTP_201_CREATED)
         else:
@@ -107,22 +116,27 @@ class AccountService:
         return Response(status=status.HTTP_200_OK)
 
 
-    def get_full_user_info(self, user_id, session_id=None):
+    def get_full_user_info(self, user_id, cart_uuid=None):
         """
         Returns user information and his cart.
         if user is anonymous then, it returns only cart and empty user field.
         :param user_id: User's identifier.
-        :param session_id: Cart's uuid identifier.
+        :param cart_uuid: Cart's uuid identifier.
         """
-        if user_id is None:
-            return Response(data={"user": None, "cart": {}}, status=status.HTTP_200_OK)
+        user, _ = self.find_user_by_id(user_id)
+        if user is not None:
+            serializer = self.user_serializer(instance=user)
+            user = serializer.data
+        else:
+            user = None
 
-        user, error_response = self.find_user_by_id(user_id)
-        if error_response:
-            return error_response
+        cart = self.cart_service.get_by_uuid_or_create_cart(cart_uuid, user_id)
+        response_data = {"user": user, "cart": cart}
 
-        serialized_user = self.user_serializer(instance=user)
-        return Response(data={"user": serialized_user.data, "cart": {}}, status=status.HTTP_200_OK)
+        if user is None:
+            response_data["cart_uuid"] = cart.get("cart_uuid")
+
+        return Response(data=response_data, status=status.HTTP_200_OK)
 
     def check_user(self, user_id):
         user, error_response = self.find_user_by_id(user_id)

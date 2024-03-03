@@ -26,3 +26,7 @@ class Product(models.Model):
     # Can product be sold?
     for_sale = models.BooleanField(default=True, db_index=True)
     image = models.URLField()
+
+
+    def __str__(self):
+        return self.name

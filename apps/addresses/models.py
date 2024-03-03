@@ -17,7 +17,8 @@ class EuropeCountries(Countries):
 
 class Address(models.Model):
     user = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True)
-    country = CountryField(countries=EuropeCountries)
+    country = CountryField(countries=EuropeCountries,
+                           choices=CountryField(countries=EuropeCountries).choices + ['', 'Select Country'])
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     phone_number = PhoneNumberField()

@@ -6,6 +6,7 @@ from rest_framework.viewsets import ViewSet
 
 from services.verification.verificaton_service import VerificationService
 from services.accounts.common import change_email
+from dependencies.service_dependencies.verification import get_verification_service
 
 
 Account = get_user_model()
@@ -16,7 +17,7 @@ class VerificationViewSet(ViewSet):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.verification_service = VerificationService(self.queryset)
+        self.verification_service: VerificationService = get_verification_service(self.queryset)
 
     @action(detail=True, methods=['post'], url_path='change-email/confirm', url_name='confirm_email_change')
     def verify_change_email(self, request):
