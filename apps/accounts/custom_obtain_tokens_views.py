@@ -8,6 +8,7 @@ from .exceptions import UnauthorizedException
 from .serializers.token_serializers import TokenRefreshSerializerForStaff
 from services.confirmation_token_codec import ConfirmationTokenCodec
 from apps.verification import tasks
+from services.carts.cart_utils import clone_cart_items
 
 
 class TokenObtainPairViewForRegularUsers(TokenObtainPairView):
@@ -21,6 +22,9 @@ class TokenObtainPairViewForRegularUsers(TokenObtainPairView):
 
         if not user:
             raise UnauthorizedException
+
+        if cart_uuid := request.data.get("copy_cart_items_from"):
+            clone_cart_items(user.id, cart_uuid)
 
         if not user.is_active:
             tasks.send_code_signup_confirmation.send(user.email)

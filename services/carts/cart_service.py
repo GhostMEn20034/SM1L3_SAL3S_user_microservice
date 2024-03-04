@@ -60,6 +60,8 @@ class CartService:
             for cart_item in cart_items:
                 cart_item.id = None
                 cart_item.cart_id = new_cart.id
+                cart_synchronizer = CartSynchronizer(cart_item)
+                cart_synchronizer.sync_cart_item_create()
                 cloned_cart_items.append(cart_item)
 
             self.cart_item_queryset.bulk_create(cloned_cart_items)

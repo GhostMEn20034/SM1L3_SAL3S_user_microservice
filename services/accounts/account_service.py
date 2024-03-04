@@ -39,6 +39,7 @@ class AccountService:
         if serializer.is_valid():
             # Save data
             user = serializer.save()
+            print(user.email)
             # Send OTP to email specified by user to confirm registration
             tasks.send_code_signup_confirmation.send(user.email)
             # Form token what will be used for email confirmation

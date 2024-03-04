@@ -12,6 +12,7 @@ def send_code_to_change_email(email):
 
 @dramatiq.actor
 def send_code_signup_confirmation(email):
+    logging.info(f"Sending confirmation code to {email}")
     send_code(settings.TWILIO_SERVICE_SID_SIGNUP_CONFIRMATION, email)
 
 

@@ -17,7 +17,7 @@ class Cart(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Cart of {self.user.email if self.user else 'anonymous'}"
+        return f"Cart of {self.user.email}" if self.user else str(self.cart_uuid)
 
 
 class CartItem(models.Model):
