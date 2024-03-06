@@ -53,8 +53,12 @@ class CartService:
 
     def copy_cart_items(self, user_id, cart_uuid):
         with transaction.atomic():
-            old_cart: Cart = self.cart_queryset.get(cart_uuid=cart_uuid)
-            new_cart: Cart = self.cart_queryset.get(user_id=user_id)
+            try:
+                old_cart: Cart = self.cart_queryset.get(cart_uuid=cart_uuid)
+                new_cart: Cart = self.cart_queryset.get(user_id=user_id)
+            except Cart.DoesNotExist:
+                return None
+
             cart_items: QuerySet[CartItem] = self.cart_item_queryset.filter(cart_id=old_cart.id)
             cloned_cart_items = []
             for cart_item in cart_items:

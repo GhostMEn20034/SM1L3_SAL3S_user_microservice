@@ -35,7 +35,10 @@ class ProductModifier:
 
         queryset = Product.objects.filter(object_id__in=product_ids)
         if discounts is None:
-            queryset.update(discount_rate=None)
+            with transaction.atomic():
+                for product in queryset:
+                    product.discount_rate = None
+                    product.save()
         else:
             discount_mapping = {_id: discount for _id, discount in zip(product_ids, discounts)}
             with transaction.atomic():

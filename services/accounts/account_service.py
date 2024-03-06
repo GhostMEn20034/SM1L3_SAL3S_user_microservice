@@ -39,7 +39,6 @@ class AccountService:
         if serializer.is_valid():
             # Save data
             user = serializer.save()
-            print(user.email)
             # Send OTP to email specified by user to confirm registration
             tasks.send_code_signup_confirmation.send(user.email)
             # Form token what will be used for email confirmation
@@ -55,8 +54,6 @@ class AccountService:
             # if serializer is not valid return error message
             error_message = serializer.errors.get(list(serializer.errors)[0])[0]
             return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
-
-
 
     def change_password(self, user_object, request_data):
         serializer = PasswordSerializer(data=request_data)

@@ -15,8 +15,9 @@ class TestSignup(APITestCase):
             first_name="Hello"
         )
 
+    @mock.patch('services.carts.signal_service.CartSignalService.create_cart_on_signup')
     @mock.patch('apps.verification.tasks.send_code_signup_confirmation.send')
-    def test_sign_up_with_correct_data(self, mocked_send_email):
+    def test_sign_up_with_correct_data(self, mocked_send_email, mocked_create_cart_on_signup):
         """User that enter correct data is successfully registered"""
         data = {
             "email": "testsunit44@gmail.com",
@@ -41,6 +42,9 @@ class TestSignup(APITestCase):
 
         # Ensure that user is inactive after registration
         self.assertEqual(user.is_active, False)
+
+        # Check that the mock function was called with the user instance as argument
+        mocked_create_cart_on_signup.assert_called_once_with(user_instance=user)
 
         # Check that send_code_signup_confirmation.delay was called once with the user email
         mocked_send_email.assert_called_once_with(data["email"])
