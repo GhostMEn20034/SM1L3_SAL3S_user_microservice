@@ -6,7 +6,7 @@ from dramatiq_crontab import cron
 from .models import Cart
 from django.conf import settings
 
-@cron(f"0 0 */{settings.DELETE_INACTIVE_CARTS_PERIOD_DAYS} * *") # Run Task Every N Hours
+@cron(f"0 0 */{settings.DELETE_INACTIVE_CARTS_PERIOD_DAYS} * *") # Run Task Every N Days
 @dramatiq.actor
 def delete_inactive_carts():
     # Get the time 1 day (24 hours) ago from now
