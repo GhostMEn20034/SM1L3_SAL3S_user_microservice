@@ -7,7 +7,6 @@ from rest_framework import status
 
 from apps.carts.models import Cart, CartItem
 from apps.carts.serialzers import CartSerializer, CartItemSerializer
-from .cart_synchronizer import CartSynchronizer
 
 
 class CartService:
@@ -31,12 +30,14 @@ class CartService:
             else:
                 cart_filters['cart_uuid'] = cart_uuid
 
-            cart: Cart = self.cart_queryset.get(**cart_filters)
+            cart: Cart = self.cart_queryset.prefetch_related('items').get(**cart_filters)
             cart_serializer = CartSerializer(instance=cart)
             cart_validated_data = cart_serializer.data
 
-            cart_items = [{"product_id": cart_item.product_id, "quantity": cart_item.quantity} for cart_item in
-                          CartItem.objects.filter(cart=cart)]
+            cart_items = {
+                cart_item.product_id: {"quantity": cart_item.quantity}
+                for cart_item in CartItem.objects.filter(cart=cart)
+            }
 
             cart_validated_data["items"] = cart_items
             return cart_validated_data
@@ -48,7 +49,9 @@ class CartService:
             serializer = CartSerializer(instance=cart)
             cart_data = serializer.data
 
-            cart_data["items"] = []
+            cart_data["items"] = {}
+            cart_data["count"] = 0
+
             return cart_data
 
     def copy_cart_items(self, user_id, cart_uuid):
@@ -64,8 +67,6 @@ class CartService:
             for cart_item in cart_items:
                 cart_item.id = None
                 cart_item.cart_id = new_cart.id
-                cart_synchronizer = CartSynchronizer(cart_item)
-                cart_synchronizer.sync_cart_item_create()
                 cloned_cart_items.append(cart_item)
 
             self.cart_item_queryset.bulk_create(cloned_cart_items)
@@ -83,9 +84,7 @@ class CartService:
         data["cart_id"] = self.cart_queryset.get(cart_uuid=cart_uuid).id
         cart_serializer = CartItemSerializer(data=data)
         if cart_serializer.is_valid():
-            created_cart_item = cart_serializer.save()
-            cart_synchronizer = CartSynchronizer(created_cart_item)
-            cart_synchronizer.sync_cart_item_create()
+            cart_serializer.save()
             return Response(status=status.HTTP_201_CREATED)
 
         return Response(cart_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -102,13 +101,8 @@ class CartService:
             cart_quantity = serializer.validated_data.get("quantity")
             if cart_quantity > 0:
                 cart_item.quantity = serializer.validated_data.get("quantity")
-
-                cart_synchronizer = CartSynchronizer(cart_item=cart_item)
-                cart_synchronizer.sync_cart_item_update()
                 cart_item.save()
             else:
-                cart_synchronizer = CartSynchronizer(cart_item)
-                cart_synchronizer.sync_cart_item_delete()
                 cart_item.delete()
 
             return Response(status=status.HTTP_204_NO_CONTENT)
@@ -122,19 +116,14 @@ class CartService:
         except (CartItem.DoesNotExist, Cart.DoesNotExist):
             return Response({"error": "Cart or its item does not exist"}, status=status.HTTP_404_NOT_FOUND)
 
-        cart_synchronizer = CartSynchronizer(cart_item)
-        cart_synchronizer.sync_cart_item_delete()
         cart_item.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def clear_cart(self, cart_uuid: uuid4):
         try:
             cart: Cart = self.cart_queryset.get(cart_uuid=cart_uuid)
+            cart.clear()
         except Cart.DoesNotExist:
             return Response({"error": "Cart does not exist"}, status=status.HTTP_404_NOT_FOUND)
 
-        CartItem.objects.filter(cart=cart).delete()
-        cart.total = 0
-        cart.count = 0
-        cart.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
