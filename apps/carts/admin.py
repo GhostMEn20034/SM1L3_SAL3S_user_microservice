@@ -17,7 +17,7 @@ class CartAdmin(admin.ModelAdmin):
 
 @admin.register(CartItem)
 class CartItemAdmin(admin.ModelAdmin):
-    list_display = ('cart' ,'product', 'quantity', )
+    list_display = ('cart', 'product', 'quantity', )
 
     def save_model(self, request, obj, form, change):
         if obj.quantity > 0:

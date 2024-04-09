@@ -27,6 +27,8 @@ class Product(models.Model):
     for_sale = models.BooleanField(default=True, db_index=True)
     image = models.URLField()
 
+    def is_able_to_add_to_cart(self, new_quantity):
+        return new_quantity <= self.stock and new_quantity <= self.max_order_qty
 
     def __str__(self):
         return self.name

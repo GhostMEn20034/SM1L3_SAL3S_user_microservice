@@ -19,6 +19,11 @@ class CartViewSet(ViewSet):
         return self.cart_service.get_cart(cart_uuid)
 
     @action(detail=True)
+    def get_carts_short_info(self, request, cart_uuid):
+        cart_filters = self.cart_service.get_cart_filters(cart_uuid, request.user.id)
+        return self.cart_service.get_cart_short_info(cart_filters, return_response_object=True)
+
+    @action(detail=True)
     def create_cart_item(self, request, cart_uuid):
         cart_item_data = request.data
         return self.cart_service.create_cart_item(cart_uuid, cart_item_data)

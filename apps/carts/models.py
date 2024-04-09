@@ -51,9 +51,31 @@ class Cart(models.Model):
 
 
 class CartItem(models.Model):
-    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items", to_field='cart_uuid')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, to_field='object_id')
     quantity = models.PositiveIntegerField(default=1)
+
+    @classmethod
+    def change_quantity_or_create(cls, validated_data):
+        """
+        Changes the quantity of the cart item by one or create cart item with the specified quantity
+        :param validated_data: Dictionary with cart_id (int), product_id (ObjectId) and quantity.
+        :return: Tuple with the CartItem object and bool value that indicates whether the cart item created.
+        """
+        cart_id: uuid.UUID = validated_data['cart_id']
+        product_id: str = validated_data['product_id']
+        quantity: int = validated_data.get('quantity', 1)
+
+        cart_item, created = cls.objects.update_or_create(
+            cart_id=cart_id,
+            product_id=product_id,
+            defaults={
+                'quantity': quantity,
+            }
+        )
+
+        return cart_item, created
+
 
     def __str__(self):
         return f"{self.quantity} x {self.product.name}"

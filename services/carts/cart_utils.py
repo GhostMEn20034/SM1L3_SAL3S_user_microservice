@@ -11,4 +11,3 @@ def clone_cart_items(cart_owner_id: int, cart_uuid: uuid4):
     """
     cart_service: CartService = get_cart_service()
     cart_service.copy_cart_items(cart_owner_id, cart_uuid)
-
