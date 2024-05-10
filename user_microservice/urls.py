@@ -9,5 +9,6 @@ urlpatterns = [
         path('', include('apps.verification.urls')),
         path('', include('apps.addresses.urls')),
         path('', include('apps.carts.urls')),
-    ]))
+        path('', include('apps.history.urls')),
+    ])),
 ]
