@@ -41,11 +41,11 @@ class HistoryViewSet(mixins.CreateModelMixin,
         # so HTTP 201 status will be returned.
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-    @action(detail=False, methods=['DELETE', ], url_path='delete-all', url_name='destroy_all')
+    @action(detail=False, methods=['DELETE', ], url_path='delete-all', url_name='destroy-all')
     def destroy_all(self, request):
         queryset = self.get_queryset()
         deleted_viewed_items_count, _ = queryset.delete()
         return Response(
             {'message': f'Deleted {deleted_viewed_items_count} items.'},
-            status=status.HTTP_200_OK
+            status=status.HTTP_204_NO_CONTENT,
         )
