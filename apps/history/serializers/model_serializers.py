@@ -7,9 +7,19 @@ from apps.products.models import Product
 
 
 class _ProductSerializer(serializers.ModelSerializer):
+    discounted_price = serializers.SerializerMethodField()
+    discount_percentage = serializers.SerializerMethodField()
+
+    def get_discounted_price(self, obj):
+        return obj.discounted_price
+
+    def get_discount_percentage(self, obj):
+        return obj.discount_percentage
+
     class Meta:
         model = Product
-        fields = ('name', 'price', 'discount_rate', 'image', 'object_id', 'for_sale', 'stock')
+        fields = ('name', 'price', 'discount_rate', 'image',
+                  'object_id', 'for_sale', 'stock', 'discounted_price', 'discount_percentage')
 
 
 class RecentlyViewedItemSerializer(serializers.ModelSerializer):
@@ -18,7 +28,7 @@ class RecentlyViewedItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = RecentlyViewedItem
         read_only_fields = ('last_seen', 'created_at', )
-        fields = ('id', 'product', 'item', 'user', 'created_at', 'last_seen', 'view_count')
+        fields = ('id', 'product', 'item', 'user','created_at', 'last_seen', 'view_count')
         extra_kwargs = {'product': {'write_only': True}}
 
     def create(self, validated_data) -> RecentlyViewedItem:

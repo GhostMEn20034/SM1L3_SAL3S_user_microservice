@@ -1,5 +1,8 @@
 from typing import Optional
 from logging import error
+
+from apps.products.param_classes.attach_to_event_params import AttachToEventParams
+from apps.products.param_classes.detach_from_event_params import DetachFromEventParams
 from apps.products.serializers.update import ProductSerializer
 from apps.products.models import Product
 from django.db import transaction
@@ -29,19 +32,14 @@ class ProductModifier:
                 serializer.is_valid(raise_exception=False)
                 serializer.save()
 
-    def set_discounts(self, data: dict):
-        product_ids = data.get("product_ids", [])
-        discounts = data.get("discounts")
+    def attach_to_event(self, params: AttachToEventParams):
+        queryset = Product.objects.filter(object_id__in=params.product_ids)
+        discount_mapping = {_id: discount for _id, discount in zip(params.product_ids, params.discounts)}
+        with transaction.atomic():
+            for product in queryset:
+                product.discount_rate = discount_mapping[product.object_id]
+                product.event_id = params.event_id
+                product.save()
 
-        queryset = Product.objects.filter(object_id__in=product_ids)
-        if discounts is None:
-            with transaction.atomic():
-                for product in queryset:
-                    product.discount_rate = None
-                    product.save()
-        else:
-            discount_mapping = {_id: discount for _id, discount in zip(product_ids, discounts)}
-            with transaction.atomic():
-                for product in queryset:
-                    product.discount_rate = discount_mapping[product.object_id]
-                    product.save()
+    def detach_from_event(self, params: DetachFromEventParams):
+        Product.objects.filter(event_id=params.event_id).update(discount_rate=None, event_id=None)

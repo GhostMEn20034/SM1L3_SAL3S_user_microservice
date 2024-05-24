@@ -74,11 +74,11 @@ class CartService:
             except Cart.DoesNotExist:
                 return None
 
-            cart_items: QuerySet[CartItem] = self.cart_item_queryset.filter(cart_id=old_cart.id)
+            cart_items: QuerySet[CartItem] = self.cart_item_queryset.filter(cart=old_cart)
             cloned_cart_items = []
             for cart_item in cart_items:
                 cart_item.id = None
-                cart_item.cart_id = new_cart.id
+                cart_item.cart = new_cart
                 cloned_cart_items.append(cart_item)
 
             self.cart_item_queryset.bulk_create(cloned_cart_items)

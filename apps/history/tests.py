@@ -4,7 +4,6 @@ from rest_framework import status
 from django.urls import reverse
 
 from apps.products.factories import ProductFactory
-from apps.products.models import Product
 from .models import RecentlyViewedItem
 
 User = get_user_model()

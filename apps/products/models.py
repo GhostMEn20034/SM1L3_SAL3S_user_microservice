@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 
@@ -26,6 +28,17 @@ class Product(models.Model):
     # Can product be sold?
     for_sale = models.BooleanField(default=True, db_index=True)
     image = models.URLField()
+    event_id = models.CharField(db_index=True, null=True, blank=True, default=None)
+
+    @property
+    def discounted_price(self):
+        discount_rate = self.discount_rate if self.discount_rate is not None else Decimal("0.00")
+        return self.price - (self.price * discount_rate)
+
+    @property
+    def discount_percentage(self):
+        discount_rate = self.discount_rate if self.discount_rate is not None else Decimal("0.00")
+        return round(discount_rate * Decimal("100.00"), 0)
 
     def is_able_to_add_to_cart(self, new_quantity) -> bool:
         if not self.for_sale:
