@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional, Union
+from typing import Optional, Union, List
 from django.db import transaction
 from django.db.models import QuerySet
 from rest_framework.response import Response
@@ -66,7 +66,7 @@ class CartService:
 
             return cart_data
 
-    def copy_cart_items(self, user_id: int, cart_uuid: uuid.UUID):
+    def copy_cart_items(self, user_id: int, cart_uuid: uuid.UUID) -> Optional[List[CartItem]]:
         with transaction.atomic():
             try:
                 old_cart: Cart = self.cart_queryset.get(cart_uuid=cart_uuid)
@@ -81,7 +81,8 @@ class CartService:
                 cart_item.cart = new_cart
                 cloned_cart_items.append(cart_item)
 
-            self.cart_item_queryset.bulk_create(cloned_cart_items)
+            inserted_cart_items = self.cart_item_queryset.bulk_create(cloned_cart_items)
+            return inserted_cart_items
 
     def get_cart(self, cart_uuid: uuid.UUID):
         cart, cart_items = self.get_cart_details(cart_uuid)

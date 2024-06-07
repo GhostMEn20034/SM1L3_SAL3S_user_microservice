@@ -4,7 +4,8 @@ from rest_framework.response import Response
 from twilio.base.exceptions import TwilioRestException
 
 from apps.accounts.serializers.serializers import EmailSerializer
-from services.accounts.common import get_tokens_for_user
+from services.accounts.account_replicator import AccountReplicator
+from services.accounts.common import get_tokens_for_user, change_email
 from services.confirmation_token_codec import ConfirmationTokenCodec
 from apps.verification import tasks
 from services.verification.code_checker import CodeChecker
@@ -12,6 +13,7 @@ from services.verification.code_checker import CodeChecker
 class VerificationService:
     def __init__(self, account_queryset):
         self.account_queryset = account_queryset
+        self.account_replicator = AccountReplicator()
 
     def reset_password_request(self, email) -> Union[Response, bytes]:
         # Validate email
@@ -47,6 +49,10 @@ class VerificationService:
 
         if not verified:
             return Response({"error": "The code is incorrect"}, status=status.HTTP_400_BAD_REQUEST)
+
+    def change_email_on_succeeded_confirmation(self, user_id: int, new_email: str) -> None:
+        changed_user = change_email(user_id, new_email)
+        self.account_replicator.replicate_account_update(changed_user)
 
     def _verify_code(self, token, code, check_function):
         """
@@ -94,6 +100,7 @@ class VerificationService:
 
         user.is_active = True
         user.save(update_fields=['is_active'])
+        self.account_replicator.replicate_account_update(user)
         return Response(status=status.HTTP_200_OK, data=get_tokens_for_user(user))
 
     def resend_otp(self, token, action_type):

@@ -1,21 +1,20 @@
-# pull official base image
-FROM python:3.11
+# Use alpine based python image
+FROM python:3.11.9-alpine
 
-# set environment variables
+# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# set work directory
+# Set work directory
 WORKDIR /app
 
-# install psycopg2 dependencies
-RUN apt-get update \
-    && apt-get install libpq-dev gcc python3-dev musl-dev -y
+# Install psycopg2 dependencies (alpine package manager)
+RUN apk update && apk add postgresql-dev gcc musl-dev
 
-# install dependencies
+# Install dependencies
 RUN pip install --upgrade pip
 COPY ./requirements.txt .
 RUN pip install -r requirements.txt
 
-# copy project
+# Copy project
 COPY . .

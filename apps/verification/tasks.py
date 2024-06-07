@@ -18,6 +18,5 @@ def send_code_signup_confirmation(email):
 
 @dramatiq.actor
 def send_code_reset_password(email):
-    print("Hello World")
     logging.info(f"Sending code reset password to {email}")
     send_code(settings.TWILIO_SERVICE_SID_PASSWORD_RESET, email)

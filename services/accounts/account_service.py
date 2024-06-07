@@ -1,7 +1,11 @@
+from django.contrib.auth import authenticate, get_user_model
+from django.db import transaction
 from rest_framework import status
 from rest_framework.response import Response
 
+from param_classes.accounts.account_replication import ReplicateAccountCreationParams
 from services.carts.cart_service import CartService
+from services.carts.cart_account_service import CartAccountService
 from apps.accounts.serializers.serializers import (
     UserCreateSerializer,
     PasswordSerializer,
@@ -10,7 +14,8 @@ from apps.accounts.serializers.serializers import (
 )
 from services.confirmation_token_codec import ConfirmationTokenCodec
 from apps.verification import tasks
-from django.contrib.auth import authenticate, get_user_model
+from .account_replicator import AccountReplicator
+
 
 Account = get_user_model()
 
@@ -19,6 +24,7 @@ class AccountService:
         self.account_queryset = account_queryset
         self.user_serializer = user_serializer
         self.cart_service: CartService = cart_service
+        self.account_replicator = AccountReplicator()
 
     def get_user(self, user_data):
         serializer = self.user_serializer(user_data)
@@ -38,18 +44,23 @@ class AccountService:
         serializer = UserCreateSerializer(data=data)
         if serializer.is_valid():
             # Save data
-            user = serializer.save()
-            # Send OTP to email specified by user to confirm registration
-            tasks.send_code_signup_confirmation.send(user.email)
-            # Form token what will be used for email confirmation
-            token = ConfirmationTokenCodec.encode_email_confirmation_token(
-                {"email": user.email, "id": user.id})
+            with transaction.atomic():
+                user = serializer.save()
+                cart = CartAccountService.create_cart_on_signup(user)
+                # Send OTP to email specified by user to confirm registration
+                tasks.send_code_signup_confirmation.send(user.email)
+                # Form token what will be used for email confirmation
+                token = ConfirmationTokenCodec.encode_email_confirmation_token(
+                    {"email": user.email, "id": user.id})
 
-            if copy_cart_items_from is not None:
-                self.cart_service.copy_cart_items(user.id, copy_cart_items_from)
+                copied_cart_items = None
+                if copy_cart_items_from is not None:
+                    copied_cart_items = self.cart_service.copy_cart_items(user.id, copy_cart_items_from)
 
-            # Return a success response with the user data
-            return Response({"token": token}, status=status.HTTP_201_CREATED)
+                params = ReplicateAccountCreationParams(user, cart, copied_cart_items)
+                self.account_replicator.replicate_account_creation(params)
+                # Return a success response with the user data
+                return Response({"token": token}, status=status.HTTP_201_CREATED)
         else:
             # if serializer is not valid return error message
             error_message = serializer.errors.get(list(serializer.errors)[0])[0]
@@ -77,7 +88,8 @@ class AccountService:
         # specify the fields that you want to update
         serializer = self.user_serializer(user_object, data=request_data, partial=True)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            self.account_replicator.replicate_account_update(instance)
             # use the join and capitalize methods to modify the field names
             field_names = ', '.join([field.replace('_', ' ').capitalize() for field in request_data])
             return Response({'success': f'{field_names} updated successfully'}, status=status.HTTP_200_OK)

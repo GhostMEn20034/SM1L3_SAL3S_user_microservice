@@ -5,7 +5,6 @@ from rest_framework import status
 from rest_framework.viewsets import ViewSet
 
 from services.verification.verificaton_service import VerificationService
-from services.accounts.common import change_email
 from dependencies.service_dependencies.verification import get_verification_service
 
 
@@ -34,9 +33,8 @@ class VerificationViewSet(ViewSet):
         if error_response:
             return error_response
 
-        changed_user = change_email(user_id=request.user.id, new_email=email)
-        if changed_user:
-            return Response(status=status.HTTP_200_OK)
+        self.verification_service.change_email_on_succeeded_confirmation(request.user.id, new_email=email)
+        return Response(status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'], url_path='signup-confirmation', url_name='signup_confirmation')
     def signup_confirmation(self, request):

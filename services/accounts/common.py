@@ -7,7 +7,7 @@ def change_email(user_id, new_email):
     user = Account.objects.get(id=user_id)
     user.email = new_email
     user.save(update_fields=['email'])
-    return True
+    return user
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
