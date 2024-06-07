@@ -7,7 +7,7 @@ from apps.core.tasks import perform_data_replication
 
 class AddressReplicator:
     """
-    Replicate user's addresses between all "subscribed" microservices.
+    Replicates user's addresses between all "subscribed" microservices.
     """
     def __init__(self):
         self.base_routing_key_name = 'users.addresses'
@@ -29,6 +29,6 @@ class AddressReplicator:
         address_data = self.__serialize_address(address)
         perform_data_replication.send(routing_key, address_data)
 
-    def replicate_address_delete(self) -> None:
+    def replicate_address_delete(self, address_id: int) -> None:
         routing_key = self.base_routing_key_name + '.delete.one'
-        perform_data_replication.send(routing_key, {})
+        perform_data_replication.send(routing_key, {"address_id": address_id})

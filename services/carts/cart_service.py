@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Dict, Tuple, Any
 from django.db import transaction
 from django.db.models import QuerySet
 from rest_framework.response import Response
@@ -10,6 +10,7 @@ from apps.products.models import Product
 from apps.carts.model_serializers.cart_item import CartItemWithProductSerializer, CartItemSerializer
 from apps.carts.model_serializers.cart import CartSerializer
 from apps.carts.serializers.cart_item import CreateCartItemSerializer
+from .cart_repilcator import CartReplicator
 from .cart_service_utils import CartsServiceUtils
 
 
@@ -19,8 +20,9 @@ class CartService:
         self.cart_item_queryset: QuerySet[CartItem] = cart_item_queryset
         self.product_queryset: QuerySet[Product] = product_queryset
         self.cart_service_utils: CartsServiceUtils = cart_service_utils
+        self.cart_replicator = CartReplicator()
 
-    def get_cart_filters(self, cart_uuid: uuid.UUID, user_id: Optional[int] = None):
+    def get_cart_filters(self, cart_uuid: uuid.UUID, user_id: Optional[int] = None) -> Dict:
         cart_filters = {}
         if user_id is not None:
             cart_filters['user_id'] = user_id
@@ -29,7 +31,7 @@ class CartService:
 
         return cart_filters
 
-    def get_cart_details(self, cart_uuid: uuid.UUID):
+    def get_cart_details(self, cart_uuid: uuid.UUID) -> Tuple[Cart, QuerySet[CartItem]]:
         cart: Cart = self.cart_queryset.get(cart_uuid=cart_uuid)
         cart_items = cart.items.select_related('product') \
             .only('quantity', 'product__max_order_qty', 'product__stock',
@@ -37,7 +39,8 @@ class CartService:
                   'product__price', 'product__discount_rate', 'product__image', )
         return cart, cart_items
 
-    def get_cart_short_info(self, cart_filters: dict, return_response_object: bool = False):
+    def get_cart_short_info(self, cart_filters: dict, return_response_object: bool = False) \
+            -> Union[Dict[str, Any], Response]:
         cart: Cart = self.cart_queryset.prefetch_related('items').get(**cart_filters)
         cart_serializer = CartSerializer(instance=cart)
         cart_validated_data = cart_serializer.data
@@ -50,13 +53,14 @@ class CartService:
         return cart_validated_data if not return_response_object \
             else Response(cart_validated_data, status.HTTP_200_OK)
 
-    def get_by_uuid_or_create_cart(self, cart_uuid: uuid.UUID, user_id: Optional[int]):
+    def get_by_uuid_or_create_cart(self, cart_uuid: uuid.UUID, user_id: Optional[int]) -> Dict[str, Any]:
         try:
             cart_filters = self.get_cart_filters(cart_uuid, user_id)
             return self.get_cart_short_info(cart_filters)
         except Cart.DoesNotExist:
             cart = Cart.objects.create(user_id=user_id)
             cart.save()
+            self.cart_replicator.replicate_cart_creation(cart)
 
             serializer = CartSerializer(instance=cart)
             cart_data = serializer.data
@@ -84,7 +88,7 @@ class CartService:
             inserted_cart_items = self.cart_item_queryset.bulk_create(cloned_cart_items)
             return inserted_cart_items
 
-    def get_cart(self, cart_uuid: uuid.UUID):
+    def get_cart(self, cart_uuid: uuid.UUID) -> Response:
         cart, cart_items = self.get_cart_details(cart_uuid)
         cart_serializer = CartSerializer(instance=cart)
         cart_item_serializer = CartItemWithProductSerializer(instance=cart_items, many=True)
@@ -93,7 +97,7 @@ class CartService:
             status=status.HTTP_200_OK,
         )
 
-    def create_cart_item(self, cart_uuid: uuid.UUID, data: dict):
+    def create_cart_item(self, cart_uuid: uuid.UUID, data: dict) -> Response:
         create_cart_serializer = CreateCartItemSerializer(data={"cart_id": cart_uuid, **data})
         if not create_cart_serializer.is_valid():
             return Response(create_cart_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -119,13 +123,15 @@ class CartService:
         cart_item_serializer = CartItemSerializer(cart_item)
 
         if created:
+            self.cart_replicator.replicate_one_cart_item_creation(cart_item)
             return Response(status=status.HTTP_201_CREATED, data={"cart_item": cart_item_serializer.data,
                                                                   "created": True})
 
+        self.cart_replicator.replicate_one_cart_item_update(cart_item)
         return Response(status=status.HTTP_204_NO_CONTENT, data={"cart_item": cart_item_serializer.data,
                                                                  "created": False})
 
-    def update_cart_item(self, cart_uuid: uuid.UUID, item_id: Union[int, str], data: dict):
+    def update_cart_item(self, cart_uuid: uuid.UUID, item_id: Union[int, str], data: dict) -> Response:
         if isinstance(item_id, str) and item_id.isdigit():
             item_id = int(item_id)
 
@@ -139,30 +145,37 @@ class CartService:
             if cart_quantity > 0:
                 cart_item.quantity = serializer.validated_data.get("quantity")
                 cart_item.save()
+                self.cart_replicator.replicate_one_cart_item_update(cart_item)
             else:
+                cart_item_id = cart_item.id
                 cart_item.delete()
+                self.cart_replicator.replicate_one_cart_item_removal(cart_item_id)
 
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete_cart_item(self, cart_uuid: uuid.UUID, item_id: Union[int, str]):
+    def delete_cart_item(self, cart_uuid: uuid.UUID, item_id: Union[int, str]) -> Response:
         if isinstance(item_id, str) and item_id.isdigit():
             item_id = int(item_id)
 
         cart_item, exists = self.cart_service_utils.get_cart_item_if_exists(cart_uuid, item_id)
-
         if not exists:
             return Response({"error": "Cart or its item does not exist"}, status=status.HTTP_404_NOT_FOUND)
 
+        cart_item_id = cart_item.id
         cart_item.delete()
+
+        self.cart_replicator.replicate_one_cart_item_removal(cart_item_id)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    def clear_cart(self, cart_uuid: uuid.UUID):
+    def clear_cart(self, cart_uuid: uuid.UUID) -> Response:
         try:
             cart: Cart = self.cart_queryset.get(cart_uuid=cart_uuid)
-            cart.clear()
         except Cart.DoesNotExist:
             return Response({"error": "Cart does not exist"}, status=status.HTTP_404_NOT_FOUND)
+
+        cart.clear()
+        self.cart_replicator.replicate_cart_clearance(cart.cart_uuid)
 
         return Response(status=status.HTTP_204_NO_CONTENT)

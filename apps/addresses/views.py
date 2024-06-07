@@ -54,5 +54,5 @@ class AddressModelViewSet(ModelViewSet):
         address = self.get_object()
         address.user = None
         address.save()
-        self.address_replicator.replicate_address_delete()
+        self.address_replicator.replicate_address_delete(address.id)
         return Response(status=status.HTTP_204_NO_CONTENT)
