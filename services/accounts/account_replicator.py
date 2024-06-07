@@ -6,7 +6,7 @@ from apps.accounts.serializers.replication_serializers import UserReplicationSer
 from apps.carts.models import Cart, CartItem
 from apps.carts.replication_serializers.cart import CartReplicationSerializer
 from apps.carts.replication_serializers.cart_item import CartItemReplicationSerializer
-from apps.accounts.tasks import perform_account_write_replication
+from apps.core.tasks import perform_data_replication
 from param_classes.accounts.account_replication import ReplicateAccountCreationParams
 
 User = get_user_model()
@@ -53,7 +53,7 @@ class AccountReplicator:
         if params.cart_items:
             cart_items_data = self.__serialize_cart_item_data(params.cart_items)
 
-        perform_account_write_replication.send(
+        perform_data_replication.send(
             routing_key, {"user": users_data, "cart": carts_data, "cart_items": cart_items_data},
         )
 
@@ -61,4 +61,4 @@ class AccountReplicator:
         routing_key = self.base_routing_key_name + '.update.one'
         users_data = self.__serialize_users_data(user)
 
-        perform_account_write_replication.send(routing_key, users_data)
+        perform_data_replication.send(routing_key, users_data)

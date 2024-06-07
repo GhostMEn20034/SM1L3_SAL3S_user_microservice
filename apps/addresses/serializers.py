@@ -16,3 +16,11 @@ class AddressModelSerializer(serializers.ModelSerializer):
         # Create a new address instance with the validated data
         address = Address.objects.create(user=user, **validated_data)
         return address
+
+
+class AddressReplicationSerializer(serializers.ModelSerializer):
+    country = CountryField(country_dict=True)
+    phone_number = PhoneNumberField()
+    class Meta:
+        model = Address
+        fields = '__all__'
