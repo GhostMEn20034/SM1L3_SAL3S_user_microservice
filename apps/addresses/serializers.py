@@ -19,7 +19,7 @@ class AddressModelSerializer(serializers.ModelSerializer):
 
 
 class AddressReplicationSerializer(serializers.ModelSerializer):
-    country = CountryField(country_dict=True)
+    country = CountryField()
     phone_number = PhoneNumberField()
     class Meta:
         model = Address

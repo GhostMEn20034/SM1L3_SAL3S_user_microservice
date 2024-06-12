@@ -1,9 +1,10 @@
 import uuid
 from typing import List, Dict, Any
+from django.conf import settings
 
 from apps.carts.replication_serializers.cart_item import CartItemReplicationSerializer
 from apps.carts.models import Cart, CartItem
-from apps.core.tasks import perform_data_replication
+from apps.core.tasks import perform_data_topic_replication
 from ..replication_utils import serialize_cart_data, serialize_many_cart_items
 
 
@@ -14,6 +15,7 @@ class CartReplicator:
     def __init__(self):
         self.base_routing_key_name_carts = 'users.carts'
         self.base_routing_key_name_cart_items = 'users.cart_items'
+        self.exchange_name = settings.USERS_DATA_CRUD_EXCHANGE_TOPIC_NAME
 
     @staticmethod
     def __serialize_cart(cart: Cart) -> Dict[str, Any]:
@@ -34,28 +36,34 @@ class CartReplicator:
     def replicate_cart_creation(self, cart: Cart):
         routing_key = self.base_routing_key_name_carts + '.create.one'
         cart_data = self.__serialize_cart(cart)
-        perform_data_replication.send(routing_key, cart_data)
+        perform_data_topic_replication.send(self.exchange_name, routing_key, cart_data)
 
     def replicate_cart_clearance(self, cart_uuid: uuid.UUID):
         routing_key = self.base_routing_key_name_carts + '.clear'
-        perform_data_replication.send(routing_key, {"cart_uuid": cart_uuid})
+        perform_data_topic_replication.send(
+            self.exchange_name, routing_key,
+            {"cart_uuid": str(cart_uuid)}
+        )
 
     def replicate_one_cart_item_creation(self, cart_item: CartItem):
         routing_key = self.base_routing_key_name_cart_items + '.create.one'
         cart_item_data = self.__serialize_one_cart_item(cart_item)
-        perform_data_replication.send(routing_key, cart_item_data)
+        perform_data_topic_replication.send(self.exchange_name, routing_key, cart_item_data)
 
     def replicate_one_cart_item_update(self, cart_item: CartItem):
         routing_key = self.base_routing_key_name_cart_items + '.update.one'
         cart_item_data = self.__serialize_one_cart_item(cart_item)
-        perform_data_replication.send(routing_key, cart_item_data)
+        perform_data_topic_replication.send(self.exchange_name, routing_key, cart_item_data)
 
     def replicate_many_cart_items_creation(self, cart_items: List[CartItem]):
         routing_key = self.base_routing_key_name_cart_items + '.create.many'
         cart_items_data = self.__serialize_many_cart_items(cart_items)
-        perform_data_replication.send(routing_key, cart_items_data)
+        perform_data_topic_replication.send(self.exchange_name, routing_key, cart_items_data)
 
     def replicate_one_cart_item_removal(self, cart_item_id: int):
         routing_key = self.base_routing_key_name_cart_items + '.delete.one'
-        perform_data_replication.send(routing_key, {"cart_item_id": cart_item_id})
+        perform_data_topic_replication.send(
+            self.exchange_name, routing_key,
+            {"cart_item_id": cart_item_id}
+        )
 
