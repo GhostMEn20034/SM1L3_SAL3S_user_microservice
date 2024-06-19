@@ -6,19 +6,18 @@ from rest_framework import status
 
 Account = get_user_model()
 
+
 class TestSignup(APITestCase):
     def setUp(self):
-
         self.user = Account.objects.create_user(
             email="TakenEmail44@gmail.com",
             password="test1234",
             first_name="Hello"
         )
 
-    @mock.patch('services.carts.signal_service.CartSignalService.create_cart_on_signup')
     @mock.patch('apps.verification.tasks.send_code_signup_confirmation.send')
-    def test_sign_up_with_correct_data(self, mocked_send_email, mocked_create_cart_on_signup):
-        """User that enter correct data is successfully registered"""
+    def test_sign_up_with_correct_data(self, mocked_send_email):
+        """User that enters correct data is successfully registered"""
         data = {
             "email": "testsunit44@gmail.com",
             "first_name": "Unit",
@@ -29,7 +28,10 @@ class TestSignup(APITestCase):
 
         url = reverse("user_signup")
 
-        response = self.client.post(url, data=data, format='json')
+        with mock.patch(
+                "services.accounts.account_replicator.AccountReplicator.replicate_account_creation"
+        ) as mocked_replication_of_account_create:
+            response = self.client.post(url, data=data, format='json')
 
         # get created user
         user = Account.objects.get(email=data["email"])
@@ -42,10 +44,8 @@ class TestSignup(APITestCase):
 
         # Ensure that user is inactive after registration
         self.assertEqual(user.is_active, False)
-
-        # Check that the mock function was called with the user instance as argument
-        mocked_create_cart_on_signup.assert_called_once_with(user_instance=user)
-
+        # Check that the replication of account create was called
+        self.assertTrue(mocked_replication_of_account_create.called)
         # Check that send_code_signup_confirmation.delay was called once with the user email
         mocked_send_email.assert_called_once_with(data["email"])
 

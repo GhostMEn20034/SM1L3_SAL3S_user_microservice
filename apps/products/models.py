@@ -13,13 +13,13 @@ class Product(models.Model):
     price = models.DecimalField(max_digits=13 ,decimal_places=2, db_index=True)
     # Coefficient where 0.00 means 0% discount and 1 means 100% discount
     discount_rate = models.DecimalField(decimal_places=2, max_digits=3, blank=True, null=True, validators=[
-        MinValueValidator(0),
-        MaxValueValidator(1)
+        MinValueValidator(Decimal(0)),
+        MaxValueValidator(Decimal(1)),
     ], db_index=True)
     # Coefficient where 0.00 means 0% tax and 1 means 100% tax
     tax_rate = models.DecimalField(decimal_places=2, max_digits=3, validators=[
-        MinValueValidator(0),
-        MaxValueValidator(1)
+        MinValueValidator(Decimal(0)),
+        MaxValueValidator(Decimal(1)),
     ], db_index=True)
     stock = models.PositiveIntegerField(default=0, )
     # Maximum count of product available on one order
