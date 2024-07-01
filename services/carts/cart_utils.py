@@ -1,6 +1,6 @@
 from uuid import uuid4
 from .cart_service import CartService
-from .cart_repilcator import CartReplicator
+from .cart_replicator import CartReplicator
 from dependencies.service_dependencies.carts import get_cart_service
 
 

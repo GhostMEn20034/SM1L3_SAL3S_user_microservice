@@ -15,7 +15,7 @@ class TestRetrieveUser(APITestCase):
         self.user = Account.objects.create_user(
             email="testing44@gmail.com",
             password=self.password,
-            first_name="Hello"
+            first_name="Hello",
         )
 
         # Get the login url

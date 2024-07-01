@@ -76,6 +76,13 @@ class CartItem(models.Model):
 
         return cart_item, created
 
+    @property
+    def total_item_price(self):
+        return round(self.product.discounted_price * self.quantity, 2)
+
+    @property
+    def total_item_tax(self):
+        return round((self.product.discounted_price * self.product.tax_rate) * self.quantity, 2)
 
     def __str__(self):
         return f"{self.quantity} x {self.product.name}"

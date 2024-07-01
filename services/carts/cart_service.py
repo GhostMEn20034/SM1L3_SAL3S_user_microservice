@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional, Union, List, Dict, Tuple, Any
+from typing import Optional, Union, List, Dict, Any
 from django.db import transaction
 from django.db.models import QuerySet
 from rest_framework.response import Response
@@ -10,7 +10,7 @@ from apps.products.models import Product
 from apps.carts.model_serializers.cart_item import CartItemWithProductSerializer, CartItemSerializer
 from apps.carts.model_serializers.cart import CartSerializer
 from apps.carts.serializers.cart_item import CreateCartItemSerializer
-from .cart_repilcator import CartReplicator
+from .cart_replicator import CartReplicator
 from .cart_service_utils import CartsServiceUtils
 
 
@@ -22,22 +22,30 @@ class CartService:
         self.cart_service_utils: CartsServiceUtils = cart_service_utils
         self.cart_replicator = CartReplicator()
 
-    def get_cart_filters(self, cart_uuid: uuid.UUID, user_id: Optional[int] = None) -> Dict:
+    @staticmethod
+    def get_cart_filters(cart_uuid: uuid.UUID, user_id: Optional[int] = None) -> Dict:
         cart_filters = {}
         if user_id is not None:
             cart_filters['user_id'] = user_id
         else:
+            cart_filters['user_id'] = None
             cart_filters['cart_uuid'] = cart_uuid
 
         return cart_filters
 
-    def get_cart_details(self, cart_uuid: uuid.UUID) -> Tuple[Cart, QuerySet[CartItem]]:
-        cart: Cart = self.cart_queryset.get(cart_uuid=cart_uuid)
-        cart_items = cart.items.select_related('product') \
-            .only('quantity', 'product__max_order_qty', 'product__stock',
-                  'product__object_id', 'product__name',
-                  'product__price', 'product__discount_rate', 'product__image', )
-        return cart, cart_items
+    def get_cart(self, cart_uuid: uuid.UUID, user_id: Optional[int] = None) -> Cart:
+        cart: Cart = self.cart_queryset.get(cart_uuid=cart_uuid, user_id=user_id)
+        return cart
+
+    def get_cart_items(self, filters: Optional[Dict] = None) -> QuerySet[CartItem]:
+        if filters is None:
+            filters = {}
+
+        cart_items = self.cart_item_queryset.filter(**filters).select_related('product').only(
+            'quantity', 'product__max_order_qty', 'product__stock',
+                  'product__object_id', 'product__name', 'product__price', 'product__tax_rate',
+                  'product__discount_rate', 'product__image', 'product__for_sale')
+        return cart_items
 
     def get_cart_short_info(self, cart_filters: dict, return_response_object: bool = False) \
             -> Union[Dict[str, Any], Response]:
@@ -88,14 +96,33 @@ class CartService:
             inserted_cart_items = self.cart_item_queryset.bulk_create(cloned_cart_items)
             return inserted_cart_items
 
-    def get_cart(self, cart_uuid: uuid.UUID) -> Response:
-        cart, cart_items = self.get_cart_details(cart_uuid)
+    def get_cart_details(self, cart_uuid: uuid.UUID, user_id: Optional[int]) -> Response:
+        try:
+            cart: Cart = self.get_cart(cart_uuid, user_id)
+        except Cart.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND, data={'detail': 'Cart with specified not found'})
+
+        cart_items: QuerySet[CartItem] = self.get_cart_items({"cart": cart})
         cart_serializer = CartSerializer(instance=cart)
         cart_item_serializer = CartItemWithProductSerializer(instance=cart_items, many=True)
         return Response(
             data={"cart": cart_serializer.data, "cart_items": cart_item_serializer.data},
             status=status.HTTP_200_OK,
         )
+
+    def get_cart_item_list(self, cart_uuid: uuid.UUID, user_id: Optional[int] = None,
+                           product_ids: Optional[List[str]] = None) -> Response:
+        filters = {
+            "cart__user_id": user_id,
+            "cart_id": cart_uuid,
+        }
+
+        if product_ids is not None:
+            filters["product_id__in"] = product_ids
+
+        cart_items = self.get_cart_items(filters)
+        serializer = CartItemWithProductSerializer(instance=cart_items, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def create_cart_item(self, cart_uuid: uuid.UUID, data: dict) -> Response:
         create_cart_serializer = CreateCartItemSerializer(data={"cart_id": cart_uuid, **data})
@@ -142,6 +169,11 @@ class CartService:
         serializer = CartItemWithProductSerializer(instance=cart_item, data=data)
         if serializer.is_valid():
             cart_quantity = serializer.validated_data.get("quantity")
+
+            if not cart_item.product.is_able_to_add_to_cart(cart_quantity):
+                return Response({"error": "Not able to add a product to the cart"},
+                                status=status.HTTP_400_BAD_REQUEST)
+
             if cart_quantity > 0:
                 cart_item.quantity = serializer.validated_data.get("quantity")
                 cart_item.save()

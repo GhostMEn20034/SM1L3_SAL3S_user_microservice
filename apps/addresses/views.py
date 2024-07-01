@@ -34,7 +34,9 @@ class AddressModelViewSet(ModelViewSet):
         address = self.perform_write_operation(serializer)
         self.address_replicator.replicate_address_creation(address)
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        serialized_address = serializer.data
+        serialized_address['oneline_repr'] = address.format_address()
+        return Response(serialized_address, status=status.HTTP_201_CREATED, headers=headers)
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)

@@ -40,6 +40,14 @@ class Product(models.Model):
         discount_rate = self.discount_rate if self.discount_rate is not None else Decimal("0.00")
         return round(discount_rate * Decimal("100.00"), 0)
 
+    @property
+    def tax_amount(self):
+        return round(self.discounted_price * self.tax_rate, 2)
+
+    @property
+    def tax_percentage(self):
+        return round(self.tax_rate * Decimal("100.00"), 0)
+
     def is_able_to_add_to_cart(self, new_quantity) -> bool:
         if not self.for_sale:
             return False
