@@ -1,7 +1,7 @@
 import uuid
 from typing import Optional, Union, List, Dict, Any
 from django.db import transaction
-from django.db.models import QuerySet
+from django.db.models import QuerySet, F
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -115,6 +115,8 @@ class CartService:
         filters = {
             "cart__user_id": user_id,
             "cart_id": cart_uuid,
+            "quantity__lte": F('product__stock'),
+            "product__for_sale": True,
         }
 
         if product_ids is not None:
