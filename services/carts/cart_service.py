@@ -203,6 +203,11 @@ class CartService:
         self.cart_replicator.replicate_one_cart_item_removal(cart_item_id)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    def delete_many_cart_items(self, user_id: int, cart_item_ids: List[Union[int, str]]) -> None:
+        filters = self.cart_service_utils.get_filters_for_cart_item_list(user_id, cart_item_ids)
+        self.cart_item_queryset.filter(**filters).delete()
+
+
     def clear_cart(self, cart_uuid: uuid.UUID) -> Response:
         try:
             cart: Cart = self.cart_queryset.get(cart_uuid=cart_uuid)

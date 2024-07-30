@@ -1,5 +1,5 @@
 import uuid
-from typing import Union, Tuple, Optional
+from typing import Union, Tuple, Optional, List, Dict, Any
 from django.db.models import QuerySet
 
 from apps.carts.models import CartItem
@@ -25,3 +25,18 @@ class CartsServiceUtils:
             return cart_item, True
         except CartItem.DoesNotExist:
             return None, False
+
+    @staticmethod
+    def get_filters_for_cart_item_list(user_id: int, cart_item_ids: List[Union[int, str]]) -> Dict[str, Any]:
+        filters = {}
+        if all(isinstance(id_, int) for id_ in cart_item_ids):
+            # All IDs are integers
+            filters["id__in"] =  cart_item_ids
+        elif all(isinstance(id_, str) for id_ in cart_item_ids):
+            # All IDs are strings
+            filters["product_id__in"] = cart_item_ids
+        else:
+            raise ValueError("All items in cart_item_ids must be of the same type (either all int or all str).")
+
+        filters["cart__user_id"] = user_id
+        return filters

@@ -57,6 +57,15 @@ services:
     env_file:
       - .env
 
+  order_processing_queue_listener_users:
+    build: .
+    container_name: order_processing_queue_listener_users
+    command: python manage.py launch_order_processing_queue_listener
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+
   db:
     image: postgres:15.4-alpine
     container_name: postgres_db

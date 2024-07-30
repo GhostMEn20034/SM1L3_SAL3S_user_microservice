@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from apps.core.product_queue_listener import ProductQueueListener
+from apps.core.queue_listeners.product_queue_listener import ProductQueueListener
 
 class Command(BaseCommand):
     help = 'Launches Listener for product messages: RabbitMQ'
