@@ -29,7 +29,7 @@ services:
   dramatiq_worker:
     build: .
     container_name: dramatiq_worker
-    command: python manage.py rundramatiq
+    command: python manage.py rundramatiq --processes 1 --threads 2
     volumes:
       - .:/app
     env_file:
