@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: django-collect-staticfiles
+  namespace: smile-sales-users
+
+spec:
+  ttlSecondsAfterFinished: 100
+  activeDeadlineSeconds: 180
+
+  template:
+    spec:
+      volumes:
+        - name: staticfiles
+          persistentVolumeClaim:
+            claimName: staticfiles-pvc
+      containers:
+        - name: staticfiles-container
+          image: ghost04/smile-sales-user-microservice:latest
+          command: ['python', 'manage.py', 'collectstatic', '--noinput']
+          imagePullPolicy: Always
+
+          envFrom:
+            - secretRef:
+                name: web-secrets
+            - configMapRef:
+                name: web-config-map
+
+          volumeMounts:
+            - mountPath: "/data/static"
+              name: staticfiles
+
+      restartPolicy: OnFailure
+
+  backoffLimit: 4
+  

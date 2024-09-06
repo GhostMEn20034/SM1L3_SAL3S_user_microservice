@@ -21,8 +21,6 @@ DEBUG = bool(os.getenv("DEBUG", default=0))
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS").split(",")
 AUTH_USER_MODEL = "accounts.Account"
 AUTHENTICATION_BACKENDS = (
-    # Google Auth
-    'social_core.backends.google.GoogleOAuth2',
     # logging with username & password
     'django.contrib.auth.backends.ModelBackend',
 )
@@ -50,8 +48,6 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'phonenumber_field',
     'django_countries',
-    'djoser',
-    'social_django',
     'corsheaders',
     'django_dramatiq',
     'dramatiq_crontab',
@@ -60,7 +56,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'social_django.middleware.SocialAuthExceptionMiddleware',
     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -82,8 +77,6 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'social_django.context_processors.backends',
-                'social_django.context_processors.login_redirect',
             ],
         },
     },
@@ -94,8 +87,10 @@ WSGI_APPLICATION = 'user_microservice.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+DB_SSL_MODE = bool(int(os.getenv("DB_SSL_MODE", default=0)))
+
 DATABASES = {
-    "default": {
+    'default': {
         "ENGINE": os.getenv("SQL_ENGINE", "django.db.backends.sqlite3"),
         "NAME": os.getenv("SQL_DATABASE", os.path.join(BASE_DIR, "db.sqlite3")),
         "USER": os.getenv("SQL_USER", "user"),
@@ -103,9 +98,11 @@ DATABASES = {
         "HOST": os.getenv("SQL_HOST", "localhost"),
         "PORT": os.getenv("SQL_PORT", "5432"),
         "CONN_MAX_AGE": int(os.getenv("SQL_CONN_MAX_AGE", 0)),
+        'OPTIONS': {
+            'sslmode': 'require' if os.getenv("DB_SSL_MODE") == '1' else 'disable',
+        },
     }
 }
-
 
 # Dramatiq Tasks
 DRAMATIQ_BROKER_URL = os.getenv("DRAMATIQ_BROKER_URL", "redis://127.0.0.1:6379/0")
@@ -167,13 +164,14 @@ USE_I18N = True
 USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.2/howto/static-files/
+if os.getenv("STATIC_ROOT"):
+    STATIC_ROOT = os.getenv("STATIC_ROOT")
+else:
+    STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 STATIC_URL = 'static/'
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
@@ -196,44 +194,16 @@ SIMPLE_JWT = {
 FLUSH_EXPIRED_TOKEN_INTERVAL_HOURS = int(os.getenv("FLUSH_EXPIRED_TOKEN_PERIOD_HOURS", 24))
 DELETE_INACTIVE_CARTS_PERIOD_DAYS = int(os.getenv("DELETE_INACTIVE_CARTS_PERIOD_DAYS", 1))
 
-white_list = ['http://localhost:3000/signin']
+CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS").split(",")
 
-DJOSER = {
-    'LOGIN_FIELD': 'email',
-    'USER_CREATE_PASSWORD_RETYPE': True,
-    'SOCIAL_AUTH_ALLOWED_REDIRECT_URIS': white_list,
-    'SOCIAL_AUTH_TOKEN_STRATEGY': 'apps.accounts.token_strategy.CustomTokenStrategy',
-    'SERIALIZERS': {
-        'user_create': 'apps.accounts.serializers.djoser_serializers.OAuthUserCreateSerializer',
-        'user': 'apps.accounts.serializers.djoser_serializers.OAuthUserCreateSerializer',
-        'current_user': 'apps.accounts.serializers.djoser_serializers.OAuthUserCreateSerializer',
-    }
-}
+if os.getenv("CSRF_TRUSTED_ORIGINS", ""):
+    CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
-]
-
-CORS_ORIGIN_WHITELIST = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
-]
+CORS_ORIGIN_WHITELIST = os.getenv("CORS_ORIGIN_WHITELIST").split(",")
 
 CORS_ALLOW_CREDENTIALS = True
 
 SESSION_COOKIE_NAME = "users-sessionid"
-
-# Google OAuth settings
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv("SOCIAL_AUTH_GOOGLE_OAUTH2_KEY")
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv("SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET")
-
-SOCIAL_AUTH_GOOGLE_OAUTH2_EXTRA_DATA = ['first_name', 'last_name']
-SOCIAL_AUTH_IMMUTABLE_USER_FIELDS = ['first_name', 'last_name']
 
 # Twilio Settings
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")

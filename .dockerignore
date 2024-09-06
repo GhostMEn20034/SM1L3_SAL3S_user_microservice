@@ -5,6 +5,9 @@
 # Docker
 .docker
 .env
+.env.k8s
+
+/k8s
 
 # Python
 app/__pycache__/

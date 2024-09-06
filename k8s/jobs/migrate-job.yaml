@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: django-db-migrations
+  namespace: smile-sales-users
+spec:
+  ttlSecondsAfterFinished: 100
+  activeDeadlineSeconds: 180
+
+  template:
+    spec:
+      containers:
+        - name: migration-container
+          image: ghost04/smile-sales-user-microservice:latest
+          command: ['python', 'manage.py', 'migrate']
+          imagePullPolicy: Always
+          envFrom:
+            - secretRef:
+                name: web-secrets
+            - configMapRef:
+                name: web-config-map
+
+      restartPolicy: OnFailure
+  backoffLimit: 10
+  

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-config-map
+  namespace: smile-sales-users
+data:
+  STATIC_ROOT: "/data/static"

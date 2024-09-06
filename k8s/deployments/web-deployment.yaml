@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-deploy
+  namespace: smile-sales-users
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: django-web-app
+  template:
+    metadata:
+      labels:
+        app: django-web-app
+
+    spec:
+      volumes:
+        - name: staticfiles
+          persistentVolumeClaim:
+            claimName: staticfiles-pvc
+      containers:
+        - image: ghost04/smile-sales-user-microservice:latest
+          command: ["gunicorn", "user_microservice.wsgi:application", "--bind", "0.0.0.0:8000"]
+          imagePullPolicy: Always
+          name: django-web-app-container
+          envFrom:
+            - secretRef:
+                name: web-secrets
+            - configMapRef:
+                name: web-config-map
+
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - mountPath: "/data/static"
+              name: staticfiles

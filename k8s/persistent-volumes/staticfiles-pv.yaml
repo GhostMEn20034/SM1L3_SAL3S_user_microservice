@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: staticfiles-pv-user-microservice
+  labels:
+    type: local
+    app: django-staticfiles-user-microservice
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 500M
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/data/static"
