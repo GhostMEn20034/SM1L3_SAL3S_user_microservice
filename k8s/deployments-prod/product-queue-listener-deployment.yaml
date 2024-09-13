@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-queue-listener
+  namespace: smile-sales-users
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: product-queue-listener
+  template:
+    metadata:
+      labels:
+        app: product-queue-listener
+
+    spec:
+
+      containers:
+        - image: ghost04/smile-sales-user-microservice:latest
+          command: [ "python", "manage.py", "launch_product_queue_listener"]
+          imagePullPolicy: Always
+          name: product-queue-listener-container
+          envFrom:
+            - secretRef:
+                name: web-secrets
+            - configMapRef:
+                name: web-config-map

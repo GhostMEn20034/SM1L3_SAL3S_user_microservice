@@ -4,9 +4,10 @@ metadata:
   name: staticfiles-pvc
   namespace: smile-sales-users
 spec:
-  storageClassName: "standard"
   accessModes:
-    - ReadWriteOnce
+  - ReadWriteMany
   resources:
     requests:
-      storage: 500Mi
+      storage: 512Mi
+  volumeName: staticfiles-pv-user-microservice
+  storageClassName: cs-fuse-smile-sales

@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: django-collect-staticfiles
+  namespace: smile-sales-users
+
+spec:
+  ttlSecondsAfterFinished: 100
+  activeDeadlineSeconds: 180
+
+  template:
+    metadata:
+      annotations:
+        gke-gcsfuse/volumes: "true" # Required
+        gke-gcsfuse/cpu-limit: 250m
+        gke-gcsfuse/memory-limit: 100Mi
+        gke-gcsfuse/ephemeral-storage-limit: 650Mi
+
+    spec:
+      serviceAccountName: default
+      securityContext:
+          runAsUser: 1001
+          runAsGroup: 2002
+          fsGroup: 3003
+
+      volumes:
+        - name: staticfiles
+          persistentVolumeClaim:
+            claimName: staticfiles-pvc
+
+      containers:
+        - name: staticfiles-container
+          image: ghost04/smile-sales-user-microservice:latest
+          command: ['python', 'manage.py', 'collectstatic', '--noinput']
+          imagePullPolicy: Always
+
+          envFrom:
+            - secretRef:
+                name: web-secrets
+            - configMapRef:
+                name: web-config-map
+
+          volumeMounts:
+            - mountPath: "/data/static"
+              name: staticfiles
+
+      restartPolicy: OnFailure
+
+  backoffLimit: 4
+  

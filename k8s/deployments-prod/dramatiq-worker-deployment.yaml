@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dramatiq-worker
+  namespace: smile-sales-users
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dramatiq-worker
+  template:
+    metadata:
+      labels:
+        app: dramatiq-worker
+
+    spec:
+      containers:
+        - image: ghost04/smile-sales-user-microservice:latest
+          command: [ "python", "manage.py", "rundramatiq", "--processes", "1", "--threads", "2" ]
+          imagePullPolicy: Always
+          name: dramatiq-worker-container
+          envFrom:
+            - secretRef:
+                name: web-secrets
+            - configMapRef:
+                name: web-config-map
