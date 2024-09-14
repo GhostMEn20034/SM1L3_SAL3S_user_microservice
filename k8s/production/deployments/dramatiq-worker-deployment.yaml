@@ -1,25 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: dramatiq-crontab
+  name: dramatiq-worker
   namespace: smile-sales-users
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: dramatiq-crontab
+      app: dramatiq-worker
   template:
     metadata:
       labels:
-        app: dramatiq-crontab
+        app: dramatiq-worker
 
     spec:
+      serviceAccountName: gke-user
 
       containers:
         - image: ghost04/smile-sales-user-microservice:latest
-          command: [ "python", "manage.py", "crontab"]
+          command: [ "python", "manage.py", "rundramatiq", "--processes", "1", "--threads", "2" ]
           imagePullPolicy: Always
-          name: dramatiq-crontab-container
+          name: dramatiq-worker-container
           envFrom:
             - secretRef:
                 name: web-secrets

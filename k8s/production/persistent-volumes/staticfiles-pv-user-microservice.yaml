@@ -6,12 +6,10 @@ spec:
   accessModes:
   - ReadWriteMany
   capacity:
-    storage: 512Mi
+    storage: 4Gi
   storageClassName: cs-fuse-smile-sales
   mountOptions:
-    - implicit-dirs
-    - uid=1001
-    - gid=3003
+    - only-dir=staticfiles
   csi:
     driver: gcsfuse.csi.storage.gke.io
     volumeHandle: smile-sales-bucket

@@ -8,6 +8,6 @@ spec:
   - ReadWriteMany
   resources:
     requests:
-      storage: 512Mi
+      storage: 4Gi
   volumeName: staticfiles-pv-user-microservice
   storageClassName: cs-fuse-smile-sales

@@ -14,14 +14,10 @@ spec:
         gke-gcsfuse/volumes: "true" # Required
         gke-gcsfuse/cpu-limit: 250m
         gke-gcsfuse/memory-limit: 100Mi
-        gke-gcsfuse/ephemeral-storage-limit: 650Mi
+        gke-gcsfuse/ephemeral-storage-limit: 500Mi
 
     spec:
-      serviceAccountName: default
-      securityContext:
-          runAsUser: 1001
-          runAsGroup: 2002
-          fsGroup: 3003
+      serviceAccountName: gke-user
 
       volumes:
         - name: staticfiles

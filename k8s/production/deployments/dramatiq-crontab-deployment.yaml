@@ -1,25 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: order-processing-queue-listener
+  name: dramatiq-crontab
   namespace: smile-sales-users
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: order-processing-queue-listener
+      app: dramatiq-crontab
   template:
     metadata:
       labels:
-        app: order-processing-queue-listener
+        app: dramatiq-crontab
 
     spec:
+      serviceAccountName: gke-user
 
       containers:
         - image: ghost04/smile-sales-user-microservice:latest
-          command: [ "python", "manage.py", "launch_order_processing_queue_listener"]
+          command: [ "python", "manage.py", "crontab"]
           imagePullPolicy: Always
-          name: order-processing-queue-listener
+          name: dramatiq-crontab-container
           envFrom:
             - secretRef:
                 name: web-secrets

@@ -1,24 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: dramatiq-worker
+  name: order-processing-queue-listener
   namespace: smile-sales-users
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: dramatiq-worker
+      app: order-processing-queue-listener
   template:
     metadata:
       labels:
-        app: dramatiq-worker
+        app: order-processing-queue-listener
 
     spec:
+      serviceAccountName: gke-user
+
       containers:
         - image: ghost04/smile-sales-user-microservice:latest
-          command: [ "python", "manage.py", "rundramatiq", "--processes", "1", "--threads", "2" ]
+          command: [ "python", "manage.py", "launch_order_processing_queue_listener"]
           imagePullPolicy: Always
-          name: dramatiq-worker-container
+          name: order-processing-queue-listener
           envFrom:
             - secretRef:
                 name: web-secrets
