@@ -6,7 +6,7 @@ on:
       - master
 
 env:
-  K8S_DIR: /k8s/production
+  K8S_DIR: k8s/production
 
 jobs:
   # First Job: Run Django Tests with Docker Compose
