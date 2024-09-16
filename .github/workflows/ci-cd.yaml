@@ -5,6 +5,9 @@ on:
     branches:
       - master
 
+env:
+  K8S_DIR: /k8s/production
+
 jobs:
   # First Job: Run Django Tests with Docker Compose
   test:
@@ -72,48 +75,54 @@ jobs:
           cluster_name: ${{ vars.GKE_CLUSTER_NAME }}
           location: ${{ vars.GKE_CLUSTER_ZONE }}
 
-      - name: 'Move to Kubernetes prod directory'
-        run: |
-          cd k8s/prod
-
       - name: 'Create .env file with production environment variables'
+        working-directory: ${{ env.K8S_DIR }}
         run: |
           echo "${{ secrets.ENV_VARS_PROD }}" > .env
 
       - name: 'Delete previous revision of the secret "web-secrets"'
+        working-directory: ${{ env.K8S_DIR }}
         run: |
           kubectl delete secret web-secrets || true
 
       - name: 'Create Kubernetes secret "web-secrets"'
+        working-directory: ${{ env.K8S_DIR }}
         run: |
           kubectl create secret generic web-secrets --from-env-file=.env
 
       - name: 'Apply config-maps'
+        working-directory: ${{ env.K8S_DIR }}
         run: |
           kubectl apply -f config-maps/
 
-      - name: 'Apply persistent volume to use Google Cloud Storage FUSE as storage'
+      - name: 'Apply persistent volume to use Google Cloud Storage FUSE as a storage'
+        working-directory: ${{ env.K8S_DIR }}
         run: |
           kubectl apply -f persistent-volumes/
 
       - name: 'Apply persistent volume claims'
+        working-directory: ${{ env.K8S_DIR }}
         run: |
           kubectl apply -f persistent-volume-claims/
 
       - name: "Apply migrations to web APIs Database"
+        working-directory: ${{ env.K8S_DIR }}
         run: |
           kubectl apply -f jobs/migrate-job.yaml
           kubectl wait --for=condition=complete --timeout=250s job/django-db-migrations
 
       - name: "Collect static files and write them to Google Cloud Storage FUSE"
+        working-directory: ${{ env.K8S_DIR }}
         run: |
           kubectl apply -f jobs/collect-staticfiles-job.yaml
           kubectl wait --for=condition=complete --timeout=250s job/django-collect-staticfiles
 
       - name: 'Apply services'
+        working-directory: ${{ env.K8S_DIR }}
         run: |
           kubectl apply -f services/
 
       - name: 'Apply deployments'
+        working-directory: ${{ env.K8S_DIR }}
         run: |
           kubectl apply -f deployments/
