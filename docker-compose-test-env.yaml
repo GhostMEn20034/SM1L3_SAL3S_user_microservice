@@ -1,0 +1,53 @@
+version: "3.8"
+services:
+
+  # redis
+  redis:
+    image: redis:7.0-alpine
+    container_name: redis
+
+  # Django app
+  web:
+    build: .
+    container_name: djangousers
+    command: >
+      sh -c "python manage.py wait_for_db &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    networks:
+      - default
+
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+  dramatiq_worker:
+    build: .
+    container_name: dramatiq_worker
+    command: python manage.py rundramatiq --processes 1 --threads 2
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+
+  db:
+    image: postgres:15.4-alpine
+    container_name: postgres_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+      - ./init-database.sh:/docker-entrypoint-initdb.d/init-database.sh
+    environment:
+      - POSTGRES_PASSWORD=${SUPER_USER_PWD}
+      - SQL_DATABASE=${SQL_DATABASE}
+      - SQL_USER=${SQL_USER}
+      - SQL_PASSWORD=${SQL_PASSWORD}
+
+volumes:
+  postgres_data:
