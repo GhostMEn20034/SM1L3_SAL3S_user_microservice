@@ -73,7 +73,7 @@ jobs:
         uses: 'google-github-actions/get-gke-credentials@v2'
         with:
           cluster_name: ${{ vars.GKE_CLUSTER_NAME }}
-          namespace: $${{ vars.GKE_K8S_NAMESPACE }}
+          namespace: ${{ vars.GKE_K8S_NAMESPACE }}
           location: ${{ vars.GKE_CLUSTER_ZONE }}
 
       - name: 'Create .env file with production environment variables'
