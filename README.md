@@ -104,7 +104,7 @@ docker compose up -d --build
 ```
 #### 1.3 Go to localhost:8000 or 127.0.0.1:8000 and use the API.
 
-### 2. Running using Kubernetes resources
+### 2. Running using Kubernetes resources in development environment
 **Note: If you want to run this API using Kubernetes, you need to create and expose Postgres and Redis servers manually**
 #### 2.1 Create a kubernetes namespace:
 ```bash
@@ -146,10 +146,17 @@ kubectl apply -f services/
 ```bash
 kubectl apply -f deployments/
 ```
+### 3. Running using Kubernetes resources in production on GKE server
+You need to perform identical steps as in the development environment.<br>
+But, there's a few nuances:
+ - You need to use k8s resources from `k8s/production` directory
+ - GCS Fuse bucket is required (it used as a storage for static files)
+ - At the end of `k8s/production/persistent-volumes/staticfiles-pv-user-microservice.yaml` file, paste your bucket's name (see "volumeHandle" key)
+ - Make sure that your kubernetes service account `gke-user` (If it's not created, create one) is bound to gcp service account which has "StorageAdmin" role and has access to the created bucket
 
 # Run Tests
 **POV: make sure you're in the default directory**<br><br>
-To run tests you need to complete 2 steps:
+To run tests you need to complete 3 steps:
 1. Run the test app with another `docker-compose` file:
 ```bash
 docker compose -f docker-compose-test-env.yaml up -d
