@@ -102,7 +102,7 @@ chmod +x init-database.sh
 ```bash
 docker compose up -d --build
 ```
-#### 1.3 Go to localhost:8000 or 127.0.0.1:8000 and use the API.
+#### 1.3 Go to [localhost:8000](http://localhost:8000) or [127.0.0.1:8000](http://127.0.0.1:8000) and use the API.
 
 ### 2. Running using Kubernetes resources in development environment
 **Note: If you want to run this API using Kubernetes, you need to create and expose Postgres and Redis servers manually**
